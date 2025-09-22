@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import React, { useState, useEffect, useCallback } from "react";
-import useLocalStorage from "../hooks/useLocalStorage.js";
+import useUndoableState from "../hooks/useUndoableState.js";
 import TemplateEditor from "./TemplateEditor.jsx";
 import Icon from "./Icon.jsx";
 import Calculator from "./Calculator.jsx";
@@ -11,8 +11,9 @@ import {
 } from "../utils/page-scripts.js";
 
 function PropertiesTab({ manageStatus, manageError }) {
-    const [templates, setTemplates] = useLocalStorage("prop-templates", []);
-    const [activeTemplateId, setActiveTemplateId] = useLocalStorage(
+    const [templates, setTemplates, setUndoableTemplates, undoTemplates] =
+        useUndoableState("prop-templates", []);
+    const [activeTemplateId, setActiveTemplateId] = useUndoableState(
         "prop-active-template-id",
         null
     );
@@ -31,6 +32,32 @@ function PropertiesTab({ manageStatus, manageError }) {
     const activeTemplate = templates.find(
         (t) => String(t.id) === activeTemplateId
     );
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.ctrlKey && event.code === "KeyZ" && !editingTemplateId) {
+                event.preventDefault();
+                if (undoTemplates()) {
+                    manageStatus("Удаление шаблона отменено", 1500);
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [undoTemplates, manageStatus, editingTemplateId]);
+
+    useEffect(() => {
+        if (showTemplateList) {
+            const handleKeyDown = (event) => {
+                if (event.key === "Escape") {
+                    setShowTemplateList(false);
+                }
+            };
+            window.addEventListener("keydown", handleKeyDown);
+
+            return () => window.removeEventListener("keydown", handleKeyDown);
+        }
+    }, [showTemplateList]);
 
     const handleAddTemplate = useCallback(() => {
         if (!newTemplateName.trim()) {
@@ -57,10 +84,9 @@ function PropertiesTab({ manageStatus, manageError }) {
             if (String(templateId) === activeTemplateId) {
                 setActiveTemplateId(null);
             }
-            setTemplates((prevTemplates) =>
-                prevTemplates.filter((t) => t.id !== templateId)
-            );
-            manageStatus(`Шаблон "${templateName}" удален`, 1000);
+            const newTemplates = templates.filter((t) => t.id !== templateId);
+            setUndoableTemplates(newTemplates);
+            manageStatus("Шаблон удален (Ctrl+Z для отмены)", 3000);
         }
     };
 

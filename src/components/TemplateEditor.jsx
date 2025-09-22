@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { propertiesList } from "../data/propertiesList.js";
 import Icon from "./Icon.jsx";
+import useUndoableState from "../hooks/useUndoableState.js";
 
-// --- Вспомогательные компоненты и функции ---
+// --- Вспомогательные компоненты ---
 
-// Компонент для отображения правильного поля ввода
 const PropertyValueInput = ({ propId, value, onChange }) => {
     const prop = propertiesList[propId];
     if (!prop) return null;
@@ -101,10 +101,8 @@ const PropertyValueInput = ({ propId, value, onChange }) => {
     }
 };
 
-// Функция для красивого отображения сохраненного значения
 const getDisplayValue = (propId, value) => {
     const propInfo = propertiesList[propId];
-
     if (
         value === null ||
         value === undefined ||
@@ -113,9 +111,7 @@ const getDisplayValue = (propId, value) => {
     ) {
         return <span className="value-empty">пусто</span>;
     }
-
     if (!propInfo) return String(value);
-
     switch (propInfo.type) {
         case "boolean":
             return value ? "Да" : "Нет";
@@ -140,7 +136,6 @@ const getDisplayValue = (propId, value) => {
     }
 };
 
-// Эта функция будет запущена на странице для сбора свойств
 const getPropertiesFromPage = () => {
     const props = [];
     try {
@@ -209,7 +204,11 @@ function TemplateEditor({
     manageError,
 }) {
     const [name, setName] = useState(template.name);
-    const [properties, setProperties] = useState(template.properties || []);
+    const [properties, setProperties, setUndoableProperties, undoProperties] =
+        useUndoableState(
+            `template-${template.id}-props`,
+            template.properties || []
+        );
     const [length, setLength] = useState(template.length || "");
     const [width, setWidth] = useState(template.width || "");
 
@@ -220,7 +219,23 @@ function TemplateEditor({
     const [editingPropId, setEditingPropId] = useState(null);
     const [editingPropValue, setEditingPropValue] = useState(null);
 
-    // --- ЛОГИКА ВЫЧИСЛЕНИЙ ---
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.ctrlKey && event.code === "KeyZ") {
+                event.preventDefault();
+                if (undoProperties()) {
+                    manageStatus("Удаление свойства отменено", 1500);
+                }
+            }
+            if (event.key === "Escape") {
+                event.preventDefault();
+                onBack();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [undoProperties, manageStatus, onBack]);
+
     const calculatePropertyValue = useCallback(
         (propIdToCalc) => {
             const truncateToTwoDecimals = (num) => {
@@ -236,7 +251,6 @@ function TemplateEditor({
 
             switch (propIdToCalc) {
                 case "4362": {
-                    // Площадь плитки
                     const l = safeParseFloat(length);
                     const w = safeParseFloat(width);
                     if (!isNaN(l) && !isNaN(w) && l > 0 && w > 0)
@@ -244,7 +258,6 @@ function TemplateEditor({
                     break;
                 }
                 case "4354": {
-                    // Вес 1 шт. плитки
                     const boxWeight = findPropValue("4357");
                     const amountInBox = findPropValue("4288");
                     if (
@@ -256,7 +269,6 @@ function TemplateEditor({
                     break;
                 }
                 case "4355": {
-                    // Вес 1 кв.м.
                     const boxWeight = findPropValue("4357");
                     const m2InBox = findPropValue("4289");
                     if (!isNaN(boxWeight) && !isNaN(m2InBox) && m2InBox > 0)
@@ -264,12 +276,10 @@ function TemplateEditor({
                     break;
                 }
                 case "4357": {
-                    // Вес упаковки
                     const m2Weight = findPropValue("4355");
                     const m2InBox = findPropValue("4289");
                     if (!isNaN(m2Weight) && !isNaN(m2InBox))
                         return truncateToTwoDecimals(m2Weight * m2InBox);
-
                     const palletWeight = findPropValue("5277");
                     const boxesInPallet = findPropValue("4947");
                     if (
@@ -283,7 +293,6 @@ function TemplateEditor({
                     break;
                 }
                 case "4289": {
-                    // м2 в упаковке
                     const amountInBox = findPropValue("4288");
                     const tileArea = findPropValue("4362");
                     if (!isNaN(amountInBox) && !isNaN(tileArea))
@@ -291,7 +300,6 @@ function TemplateEditor({
                     break;
                 }
                 case "4356": {
-                    // м2 в палетте
                     const boxesInPallet = findPropValue("4947");
                     const m2InBox = findPropValue("4289");
                     if (!isNaN(boxesInPallet) && !isNaN(m2InBox))
@@ -299,7 +307,6 @@ function TemplateEditor({
                     break;
                 }
                 case "4947": {
-                    // Коробок на палетте
                     const m2InPallet = findPropValue("4356");
                     const m2InBox = findPropValue("4289");
                     if (!isNaN(m2InPallet) && !isNaN(m2InBox) && m2InBox > 0)
@@ -307,7 +314,6 @@ function TemplateEditor({
                     break;
                 }
                 case "5277": {
-                    // Вес палетты
                     const boxWeight = findPropValue("4357");
                     const boxesInPallet = findPropValue("4947");
                     if (!isNaN(boxWeight) && !isNaN(boxesInPallet))
@@ -321,7 +327,6 @@ function TemplateEditor({
         [properties, length, width]
     );
 
-    // --- ОБРАБОТЧИКИ ДЕЙСТВИЙ ---
     const handleSave = useCallback(() => {
         if (!name.trim()) {
             alert("Название шаблона не может быть пустым.");
@@ -342,7 +347,6 @@ function TemplateEditor({
             typeof length === "string" ? length.replace(",", ".") : length;
         const sanitizedWidth =
             typeof width === "string" ? width.replace(",", ".") : width;
-
         const updatedTemplate = {
             ...template,
             name: name.trim(),
@@ -366,10 +370,12 @@ function TemplateEditor({
         setIsAddingProp(false);
         setSelectedPropId("");
         setCurrentPropValue(null);
-    }, [selectedPropId, currentPropValue]);
+    }, [selectedPropId, currentPropValue, setProperties]);
 
     const handleDeleteProperty = (propId) => {
-        setProperties((prev) => prev.filter((p) => p.id !== propId));
+        const newProperties = properties.filter((p) => p.id !== propId);
+        setUndoableProperties(newProperties);
+        manageStatus("Свойство удалено (Ctrl+Z для отмены)", 3000);
     };
 
     const handleEditClick = (prop) => {
@@ -390,7 +396,7 @@ function TemplateEditor({
         );
         setEditingPropId(null);
         setEditingPropValue(null);
-    }, [editingPropId, editingPropValue]);
+    }, [editingPropId, editingPropValue, setProperties]);
 
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -405,11 +411,9 @@ function TemplateEditor({
                 if (editingPropId) handleUpdateProperty();
             }
         };
-
         if (isAddingProp || editingPropId) {
             document.addEventListener("keydown", handleKeyDown);
         }
-
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [
         isAddingProp,
@@ -424,10 +428,8 @@ function TemplateEditor({
             mode === "replace"
                 ? "Это действие заменит все текущие данные в шаблоне данными со страницы. Продолжить?"
                 : "Это действие добавит недостающие свойства со страницы в ваш шаблон. Продолжить?";
+        if (!confirm(confirmationMessage)) return;
 
-        if (!confirm(confirmationMessage)) {
-            return;
-        }
         manageStatus("Импортирую данные со страницы...", 2000);
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) {
@@ -459,14 +461,12 @@ function TemplateEditor({
                             setWidth(result.data.width);
                             manageStatus("Данные успешно заменены", 1500);
                         } else {
-                            // mode === 'merge'
                             const existingPropIds = new Set(
                                 properties.map((p) => p.id)
                             );
                             const newProperties = result.data.properties.filter(
                                 (p) => !existingPropIds.has(p.id)
                             );
-
                             if (newProperties.length > 0) {
                                 setProperties((prev) => [
                                     ...prev,
@@ -523,12 +523,10 @@ function TemplateEditor({
             parseFloat(String(str).replace(",", "."));
         const l = safeParseFloat(length);
         const w = safeParseFloat(width);
-
         if (isNaN(l) || isNaN(w) || l <= 0 || w <= 0) {
             manageError("Заполните Длину и Ширину для расчета.");
             return;
         }
-
         const shapeValue = l === w ? "6361" : "6360";
         setProperties((prev) =>
             prev.map((p) => (p.id === "4287" ? { ...p, value: shapeValue } : p))
@@ -564,7 +562,6 @@ function TemplateEditor({
                     &larr; Назад к списку
                 </button>
             </div>
-
             <div className="dimensions-inputs">
                 <div className="dimension-group">
                     <label>Длина, см:</label>
@@ -591,7 +588,6 @@ function TemplateEditor({
                     />
                 </div>
             </div>
-
             <h3>Свойства в шаблоне:</h3>
             <div className="properties-list">
                 {properties.length > 0 ? (
@@ -691,7 +687,6 @@ function TemplateEditor({
                     </p>
                 )}
             </div>
-
             {isAddingProp ? (
                 <div className="add-prop-form">
                     <select
@@ -735,7 +730,6 @@ function TemplateEditor({
                     + Добавить свойство
                 </button>
             )}
-
             <div className="editor-actions">
                 <button
                     className="button"

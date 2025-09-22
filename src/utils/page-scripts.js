@@ -123,8 +123,9 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
 
             window.scrollTo(0, document.body.scrollHeight * 0.97);
 
-            setTimeout(addNextForm, 200);
-        }, 150);
+            // --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+            setTimeout(addNextForm, 100); // Было 200
+        }, 75); // Было 150
     }
 
     addNextForm();
@@ -185,7 +186,7 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
                 if (valueElement) {
                     setElementValue(valueElement, propFromTemplate.value);
                     filledCount++;
-                    await delay(100); // Добавляем задержку в 100мс
+                    await delay(100);
                 }
             }
         }
