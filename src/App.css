@@ -1,0 +1,513 @@
+/* Убираем отступы по умолчанию */
+body,
+html {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+        "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+        "Helvetica Neue", sans-serif;
+}
+
+/* Главный контейнер приложения */
+.app-container {
+    width: 350px;
+    background-color: #eef2f9;
+    min-height: 100vh;
+}
+
+/* Наша шапка с табами */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 12px 16px 0;
+    background-color: #eef2f9;
+    border-bottom: 1px solid #dce3f0;
+}
+
+.app-header nav {
+    display: flex;
+    gap: 4px;
+}
+
+/* --- Цвета для вкладок --- */
+.app-header nav button {
+    padding: 10px 14px;
+    border: 1px solid #dce3f0;
+    border-bottom: none;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    top: 1px;
+}
+
+.app-header nav button {
+    background-color: #ffffff;
+    color: #333;
+}
+
+.app-header nav button.active {
+    background-color: #eef2f9;
+    border-color: #dce3f0;
+    border-bottom-color: transparent;
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+/* Основной контент под шапкой */
+.tab-content {
+    padding: 16px;
+    padding-bottom: 40px;
+}
+
+/* --- Стили для форм --- */
+.form-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-field {
+    padding: 8px;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    width: 50px;
+    font-size: 14px;
+}
+
+.button {
+    padding: 8px 12px;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    transition: background-color 0.2s ease;
+}
+
+.button:hover {
+    background-color: #f0f2f5;
+}
+
+.button:disabled {
+    background-color: #f0f2f5;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+/* --- Стили для счётчика --- */
+.input-group {
+    display: flex;
+    align-items: center;
+}
+
+.button-group {
+    display: flex;
+    margin-left: 8px;
+}
+
+.stepper-button {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 30px;
+    border-radius: 4px;
+    margin-right: 4px;
+    border: 1px solid #dce3f0;
+    background-color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.stepper-button:last-child {
+    margin-right: 0;
+}
+
+.stepper-button:hover {
+    background-color: #f0f2f5;
+    border-color: #b0c4de;
+}
+
+.clear-button {
+    color: #e53e3e;
+    font-weight: bold;
+}
+
+/* --- Стили для строки состояния --- */
+.status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #eef2f9;
+    border-top: 1px solid #dce3f0;
+    padding: 6px 16px;
+    box-sizing: border-box;
+}
+
+.status-bar p {
+    margin: 0;
+    font-size: 13px;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-bar.error {
+    background-color: #f8d7da;
+    border-top-color: #f5c6cb;
+}
+
+.status-bar.error p {
+    color: #721c24;
+    font-weight: bold;
+}
+
+/* --- Стили для секций --- */
+.section {
+    margin-bottom: 16px;
+}
+.section h2,
+.section h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+hr {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px solid #dce3f0;
+}
+
+/* --- Стили для Менеджера Шаблонов --- */
+.add-template-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.add-template-form .input-field {
+    flex-grow: 1;
+}
+
+.button.secondary {
+    background-color: #e4e6eb;
+    color: #333;
+}
+
+.template-list-container {
+    margin-top: 16px;
+}
+
+.empty-list-message {
+    color: #555;
+    font-style: italic;
+}
+
+.template-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.template-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    min-height: 38px;
+}
+
+.template-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.template-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.template-prop-count {
+    font-size: 12px;
+    color: #555;
+}
+
+.template-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.button.small {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* --- Стили для иконок-кнопок --- */
+.button.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
+
+.button.icon-button svg {
+    width: 16px;
+    height: 16px;
+    stroke: #333;
+}
+
+.button.icon-button:hover {
+    background-color: #e4e6eb;
+}
+
+.button.icon-button.danger {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.button.icon-button.danger:hover {
+    background-color: #f8d7da;
+}
+
+.button.icon-button.danger svg {
+    stroke: #e53e3e;
+}
+
+/* --- Стили для Редактора Шаблонов --- */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.editor-title-input {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s ease;
+    width: 70%;
+}
+
+.editor-title-input:focus {
+    border-bottom-color: #3b82f6;
+}
+
+.properties-list {
+    margin-bottom: 20px;
+}
+
+.editor-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.button.primary {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.add-prop-form {
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.radio-group,
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.radio-group label,
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.select-field {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.prop-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-grow: 1;
+}
+
+.prop-name {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.prop-value {
+    font-size: 12px;
+    color: #555;
+    font-weight: bold;
+}
+
+.value-empty {
+    font-style: italic;
+    font-weight: normal;
+    color: #888;
+}
+
+.template-list li.editing-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* --- Стили для полей Длина/Ширина --- */
+.dimensions-inputs {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    align-items: center;
+}
+
+.dimension-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dimension-group label {
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+}
+
+.dimension-group .input-field {
+    width: 100px;
+}
+
+/* --- Стили для кнопки "Calc" --- */
+.button.calc-button {
+    background-color: #e6f7ff;
+    border-color: #91d5ff;
+    color: #096dd9;
+    font-weight: bold;
+}
+
+.button.calc-button:hover {
+    background-color: #bae7ff;
+    border-color: #69c0ff;
+}
+
+/* --- Стили для раздела "Свойства плитки" --- */
+.active-template-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.active-template-display span {
+    font-size: 14px;
+}
+
+.active-template-display strong {
+    font-size: 14px;
+    color: #3b82f6;
+    flex-grow: 1;
+}
+
+.active-template-display .no-template {
+    font-style: italic;
+    color: #888;
+    flex-grow: 1;
+}
+
+.template-chooser {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #dce3f0;
+}
+
+.action-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.action-buttons-grid .button {
+    width: 100%;
+}
+
+/* --- Стили для блока с результатами поиска --- */
+.results-display {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background-color: #e6f7ff;
+    border: 1px solid #91d5ff;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #096dd9;
+    text-align: center;
+}
+
+/* --- Стили для раздела "Вычисление параметров" --- */
+.calculator-section {
+    margin-bottom: 16px;
+}
+
+.calculator-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #555;
+    border-bottom: 1px solid #dce3f0;
+    padding-bottom: 4px;
+}
