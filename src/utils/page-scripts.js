@@ -1,8 +1,9 @@
+// src/utils/page-scripts.js
+
 // Эта функция будет запущена на странице для сбора всех свойств
 export const getPropertiesFromPage = () => {
     const props = [];
     try {
-        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: "Открываем дверь" перед поиском ---
         const formContainer = document.querySelector(
             "#plumbing-attributevalue-content_type-object_id-group"
         );
@@ -40,7 +41,6 @@ export const getPropertiesFromPage = () => {
             return null;
         };
 
-        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: Новый, более надежный метод поиска, как в старом приложении ---
         const propSelects = document.querySelectorAll(
             '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
         );
@@ -58,7 +58,6 @@ export const getPropertiesFromPage = () => {
         propSelects.forEach((propSelect, index) => {
             const propId = propSelect.value;
             if (propId) {
-                // Учитываем только те строки, где свойство выбрано
                 const value = getScrapedValue(valueElements[index]);
                 props.push({ id: propId, value: value });
             }
@@ -132,8 +131,10 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
     return { success: true };
 };
 
-// Заполняет формы на странице значениями из шаблона
-export const fillPropertyFormsOnPage = (propsToFill) => {
+// Заполняет формы на странице значениями из шаблона ПОСЛЕДОВАТЕЛЬНО
+export const fillPropertyFormsOnPage = async (propsToFill) => {
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     const setElementValue = (element, value) => {
         if (!element) return;
         const radioInputs = element.querySelectorAll('input[type="radio"]');
@@ -177,17 +178,18 @@ export const fillPropertyFormsOnPage = (propsToFill) => {
         '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
     );
 
-    propsToFill.forEach((propFromTemplate) => {
+    for (const propFromTemplate of propsToFill) {
         for (let i = 0; i < allPropSelects.length; i++) {
             if (allPropSelects[i].value === propFromTemplate.id) {
                 const valueElement = allValueElements[i];
                 if (valueElement) {
                     setElementValue(valueElement, propFromTemplate.value);
                     filledCount++;
+                    await delay(100); // Добавляем задержку в 100мс
                 }
             }
         }
-    });
+    }
 
     return { success: true, message: `Заполнено ${filledCount} свойств.` };
 };

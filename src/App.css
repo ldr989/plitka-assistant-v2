@@ -59,7 +59,8 @@ html {
 /* Основной контент под шапкой */
 .tab-content {
     padding: 16px;
-    padding-bottom: 40px;
+    /* Увеличиваем отступ снизу, чтобы контент не заезжал под новый статус-бар */
+    padding-bottom: 70px;
 }
 
 /* --- Стили для форм --- */
@@ -144,13 +145,17 @@ html {
     width: 100%;
     background-color: #eef2f9;
     border-top: 1px solid #dce3f0;
-    padding: 6px 16px;
+    padding: 0 16px;
     box-sizing: border-box;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .status-bar p {
     margin: 0;
-    font-size: 13px;
+    font-size: 15px;
     color: #555;
     white-space: nowrap;
     overflow: hidden;
@@ -165,6 +170,23 @@ html {
 .status-bar.error p {
     color: #721c24;
     font-weight: bold;
+}
+
+/* --- Анимация для шестеренки --- */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-gear {
+    animation: spin 1.5s linear infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* --- Стили для секций --- */
@@ -471,19 +493,47 @@ hr {
     flex-grow: 1;
 }
 
-.template-chooser {
-    padding: 4px 8px;
-    border-radius: 4px;
+.template-selector-wrapper {
+    position: relative;
+    margin-left: auto;
+}
+
+.template-chooser-popup {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    z-index: 20;
+    background-color: #fff;
     border: 1px solid #dce3f0;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 4px;
+}
+
+.template-chooser-popup option {
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.template-chooser-popup option:hover {
+    background-color: #eef2f9;
 }
 
 .action-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.action-buttons-grid-2x2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
 }
 
-.action-buttons-grid .button {
+.action-buttons-grid .button,
+.action-buttons-grid-2x2 .button {
     width: 100%;
 }
 
@@ -510,4 +560,24 @@ hr {
     color: #555;
     border-bottom: 1px solid #dce3f0;
     padding-bottom: 4px;
+}
+
+/* --- Стили для кнопки "Все шаблоны" --- */
+.show-all-templates-section {
+    display: flex;
+    justify-content: center;
+    margin-top: -8px;
+    margin-bottom: 16px;
+}
+
+/* --- Стили для хедера списка шаблонов --- */
+.template-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.template-list-header h2 {
+    margin: 0;
 }

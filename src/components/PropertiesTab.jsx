@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import useLocalStorage from "../hooks/useLocalStorage.js";
 import TemplateEditor from "./TemplateEditor.jsx";
 import Icon from "./Icon.jsx";
-import Calculator from "./Calculator.jsx"; // <-- 1. ДОБАВЛЕН ИМПОРТ
+import Calculator from "./Calculator.jsx";
 import {
     getPropertiesFromPage,
     addPropertyFormsOnPage,
@@ -17,11 +17,12 @@ function PropertiesTab({ manageStatus, manageError }) {
         null
     );
     const [editingTemplateId, setEditingTemplateId] = useState(null);
-
     const [isAdding, setIsAdding] = useState(false);
     const [newTemplateName, setNewTemplateName] = useState("");
-
     const [missingProperties, setMissingProperties] = useState(null);
+
+    const [showTemplateList, setShowTemplateList] = useState(false);
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
     useEffect(() => {
         setMissingProperties(null);
@@ -48,23 +49,6 @@ function PropertiesTab({ manageStatus, manageError }) {
         setIsAdding(false);
         manageStatus(`Шаблон "${newTemplate.name}" создан`, 1000);
     }, [newTemplateName, setTemplates, manageStatus, manageError]);
-
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (!isAdding) return;
-            if (event.key === "Enter") {
-                event.preventDefault();
-                handleAddTemplate();
-            }
-            if (event.key === "Escape") {
-                event.preventDefault();
-                setIsAdding(false);
-            }
-        };
-
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [isAdding, handleAddTemplate]);
 
     const handleDeleteTemplate = (templateId, templateName) => {
         if (
@@ -95,9 +79,7 @@ function PropertiesTab({ manageStatus, manageError }) {
 
     const handleFindMissingProperties = () => {
         if (!activeTemplate) return;
-
         manageStatus("Ищу свойства на странице...", 2000);
-
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) {
                 manageError("Ошибка: активная вкладка не найдена");
@@ -121,19 +103,15 @@ function PropertiesTab({ manageStatus, manageError }) {
                         setMissingProperties([]);
                         return;
                     }
-
                     const result = injectionResults[0].result;
                     if (result.success) {
                         const pageProps = result.data.properties;
                         const pagePropIds = new Set(pageProps.map((p) => p.id));
                         const templateProps = activeTemplate.properties;
-
                         const missing = templateProps.filter(
                             (templateProp) => !pagePropIds.has(templateProp.id)
                         );
-
                         setMissingProperties(missing);
-
                         if (missing.length > 0) {
                             manageStatus(
                                 `Найдено отсутствующих свойств: ${missing.length}`,
@@ -156,15 +134,12 @@ function PropertiesTab({ manageStatus, manageError }) {
 
     const handleAddMissingForms = () => {
         if (!missingProperties || missingProperties.length === 0) return;
-
         const missingPropIds = missingProperties.map((p) => p.id);
         const estimatedTime = 500 + missingPropIds.length * 350;
-
         manageStatus(
             `Добавляю ${missingPropIds.length} форм(у) на страницу...`,
             estimatedTime
         );
-
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) {
                 manageError("Ошибка: активная вкладка не найдена");
@@ -177,20 +152,11 @@ function PropertiesTab({ manageStatus, manageError }) {
                     args: [missingPropIds],
                     world: "MAIN",
                 },
-                (injectionResults) => {
-                    if (
-                        chrome.runtime.lastError ||
-                        !injectionResults ||
-                        !injectionResults[0]
-                    ) {
+                () => {
+                    if (chrome.runtime.lastError) {
                         manageError(
                             "Ошибка: не удалось запустить скрипт добавления форм"
                         );
-                        return;
-                    }
-                    const result = injectionResults[0].result;
-                    if (result && !result.success) {
-                        manageError(result.message);
                     }
                 }
             );
@@ -199,13 +165,11 @@ function PropertiesTab({ manageStatus, manageError }) {
 
     const handleFillMissingForms = () => {
         if (!missingProperties || missingProperties.length === 0) return;
-
         const estimatedTime = 500 + missingProperties.length * 150;
         manageStatus(
             `Заполняю ${missingProperties.length} форм(у)...`,
             estimatedTime
         );
-
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) {
                 manageError("Ошибка: активная вкладка не найдена");
@@ -218,20 +182,11 @@ function PropertiesTab({ manageStatus, manageError }) {
                     args: [missingProperties],
                     world: "MAIN",
                 },
-                (injectionResults) => {
-                    if (
-                        chrome.runtime.lastError ||
-                        !injectionResults ||
-                        !injectionResults[0]
-                    ) {
+                () => {
+                    if (chrome.runtime.lastError) {
                         manageError(
                             "Ошибка: не удалось запустить скрипт заполнения"
                         );
-                        return;
-                    }
-                    const result = injectionResults[0].result;
-                    if (result && !result.success) {
-                        manageError(result.message);
                     }
                 }
             );
@@ -240,19 +195,16 @@ function PropertiesTab({ manageStatus, manageError }) {
 
     const handleReplaceAllValues = () => {
         if (!activeTemplate) return;
-
         const propsToFill = activeTemplate.properties;
         if (propsToFill.length === 0) {
             manageError("В активном шаблоне нет свойств для замены.");
             return;
         }
-
         const estimatedTime = 500 + propsToFill.length * 150;
         manageStatus(
             `Заменяю значения для ${propsToFill.length} свойств...`,
             estimatedTime
         );
-
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]) {
                 manageError("Ошибка: активная вкладка не найдена");
@@ -268,7 +220,6 @@ function PropertiesTab({ manageStatus, manageError }) {
     };
 
     const editingTemplate = templates.find((t) => t.id === editingTemplateId);
-
     if (editingTemplate) {
         return (
             <TemplateEditor
@@ -281,10 +232,20 @@ function PropertiesTab({ manageStatus, manageError }) {
         );
     }
 
-    return (
-        <div>
+    if (showTemplateList) {
+        return (
             <div className="section">
-                <h2>Список шаблонов:</h2>
+                <div className="template-list-header">
+                    <h2>Список шаблонов:</h2>
+                    <button
+                        className="button icon-button"
+                        onClick={() => setShowTemplateList(false)}
+                        title="Закрыть"
+                    >
+                        <Icon name="close" />
+                    </button>
+                </div>
+
                 {isAdding ? (
                     <div className="add-template-form">
                         <input
@@ -363,8 +324,11 @@ function PropertiesTab({ manageStatus, manageError }) {
                     )}
                 </div>
             </div>
-            <hr />
+        );
+    }
 
+    return (
+        <div>
             <div className="section">
                 <h2>Свойства плитки</h2>
                 <div className="active-template-display">
@@ -374,28 +338,57 @@ function PropertiesTab({ manageStatus, manageError }) {
                     ) : (
                         <span className="no-template">Не выбран</span>
                     )}
-                    <select
-                        className="template-chooser"
-                        value={activeTemplateId || ""}
-                        onChange={(e) => setActiveTemplateId(e.target.value)}
-                        disabled={templates.length === 0}
-                    >
-                        <option value="">-- Выбрать шаблон --</option>
-                        {templates.map((t) => (
-                            <option key={t.id} value={t.id}>
-                                {t.name}
-                            </option>
-                        ))}
-                    </select>
+
+                    <div className="template-selector-wrapper">
+                        <button
+                            className="button icon-button small"
+                            onClick={() =>
+                                setShowTemplateSelector(!showTemplateSelector)
+                            }
+                            title="Выбрать шаблон"
+                        >
+                            <Icon name="pencil" />
+                        </button>
+                        {showTemplateSelector && (
+                            <select
+                                className="template-chooser-popup"
+                                value={activeTemplateId || ""}
+                                onChange={(e) => {
+                                    setActiveTemplateId(e.target.value);
+                                    setShowTemplateSelector(false);
+                                }}
+                                disabled={templates.length === 0}
+                                size={Math.min(templates.length + 1, 8)}
+                                autoFocus
+                                onBlur={() => setShowTemplateSelector(false)}
+                            >
+                                <option value="">-- Выбрать шаблон --</option>
+                                {templates.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                 </div>
 
-                <div className="action-buttons-grid">
+                <div className="show-all-templates-section">
+                    <button
+                        className="button secondary"
+                        onClick={() => setShowTemplateList(true)}
+                    >
+                        Все шаблоны
+                    </button>
+                </div>
+
+                <div className="action-buttons-grid-2x2">
                     <button
                         className="button"
                         disabled={!activeTemplate}
                         onClick={handleFindMissingProperties}
                     >
-                        Найти отсутствующие
+                        Поиск свойств
                     </button>
                     <button
                         className="button"
@@ -417,30 +410,21 @@ function PropertiesTab({ manageStatus, manageError }) {
                         }
                         onClick={handleFillMissingForms}
                     >
-                        Заполнить формы
+                        Заполнить
                     </button>
                     <button
                         className="button"
                         disabled={!activeTemplate}
                         onClick={handleReplaceAllValues}
                     >
-                        Заменить значениями
+                        Заменить
                     </button>
                 </div>
-
-                {missingProperties && (
-                    <div className="results-display">
-                        {missingProperties.length > 0
-                            ? `Готово к добавлению: ${missingProperties.length} свойств.`
-                            : "Все свойства на месте!"}
-                    </div>
-                )}
             </div>
 
             <hr />
             <div className="section">
                 <h2>Вычисление параметров</h2>
-                {/* 2. ЗАМЕНА ЗАГЛУШКИ НА ГОТОВЫЙ КОМПОНЕНТ */}
                 <Calculator
                     manageStatus={manageStatus}
                     manageError={manageError}

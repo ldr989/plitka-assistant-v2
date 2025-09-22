@@ -1,13 +1,9 @@
 /* eslint-disable no-undef */
 import React from "react";
-// Импортируем все наши функции-калькуляторы
 import * as calcs from "../utils/calculator-scripts.js";
 
-// Компонент принимает функции для управления строкой состояния
 function Calculator({ manageStatus, manageError }) {
-    // Общая функция для запуска любого вычисления
     const handleCalculate = (calculationFunc, successMessage) => {
-        // Сообщаем пользователю, что процесс начался
         manageStatus(`Вычисляю "${successMessage}"...`, 1500);
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -16,33 +12,25 @@ function Calculator({ manageStatus, manageError }) {
                 return;
             }
 
-            // Запускаем нужную функцию на странице
             chrome.scripting.executeScript(
                 {
                     target: { tabId: tabs[0].id },
                     func: calculationFunc,
                     world: "MAIN",
                 },
-                (injectionResults) => {
-                    if (
-                        chrome.runtime.lastError ||
-                        !injectionResults ||
-                        !injectionResults[0]
-                    ) {
-                        manageError("Ошибка: не удалось выполнить скрипт");
+                () => {
+                    if (chrome.runtime.lastError) {
+                        manageError(
+                            "Ошибка выполнения: " +
+                                chrome.runtime.lastError.message
+                        );
                         return;
                     }
-                    const result = injectionResults[0].result;
-                    if (result && !result.success) {
-                        manageError(result.message || "Произошла ошибка");
-                    }
-                    // Если всё успешно, manageStatus завершит операцию
                 }
             );
         });
     };
 
-    // Рендерим группы кнопок
     return (
         <div className="calculator-section">
             <h4>Плитка:</h4>
@@ -50,32 +38,26 @@ function Calculator({ manageStatus, manageError }) {
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(
-                            calcs.calculateTileArea,
-                            "Площадь плитки"
-                        )
+                        handleCalculate(calcs.calculateTileArea, "Площадь")
                     }
                 >
-                    Площадь плитки
+                    Площадь
                 </button>
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(
-                            calcs.calculateWeightOfTile,
-                            "Вес 1 шт."
-                        )
+                        handleCalculate(calcs.calculateWeightOfTile, "Кг/шт")
                     }
                 >
-                    Вес 1 шт.
+                    Кг/шт
                 </button>
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(calcs.calculateWeightOfM2, "Вес 1 м²")
+                        handleCalculate(calcs.calculateWeightOfM2, "Кг/м2")
                     }
                 >
-                    Вес 1 м²
+                    Кг/м2
                 </button>
             </div>
 
@@ -84,32 +66,26 @@ function Calculator({ manageStatus, manageError }) {
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(calcs.calculateM2InBox, "м² в коробке")
+                        handleCalculate(calcs.calculateTilesInBox, "Шт/кор")
                     }
                 >
-                    м² в коробке
+                    Шт/кор
                 </button>
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(
-                            calcs.calculateWeightOfBox,
-                            "Вес коробки"
-                        )
+                        handleCalculate(calcs.calculateM2InBox, "М2/кор")
                     }
                 >
-                    Вес коробки
+                    М2/кор
                 </button>
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(
-                            calcs.calculateTilesInBox,
-                            "Штук в коробке"
-                        )
+                        handleCalculate(calcs.calculateWeightOfBox, "Кг/кор")
                     }
                 >
-                    Штук в коробке
+                    Кг/кор
                 </button>
             </div>
 
@@ -120,33 +96,30 @@ function Calculator({ manageStatus, manageError }) {
                     onClick={() =>
                         handleCalculate(
                             calcs.calculateBoxesInPallet,
-                            "Коробок на паллете"
+                            "Кор/палл"
                         )
                     }
                 >
-                    Коробок на паллете
+                    Кор/палл
                 </button>
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(
-                            calcs.calculateM2InPallet,
-                            "м² на паллете"
-                        )
+                        handleCalculate(calcs.calculateM2InPallet, "М2/палл")
                     }
                 >
-                    м² на паллете
+                    М2/палл
                 </button>
                 <button
                     className="button"
                     onClick={() =>
                         handleCalculate(
                             calcs.calculateWeightOfPallet,
-                            "Вес паллеты"
+                            "Кг/палл"
                         )
                     }
                 >
-                    Вес паллеты
+                    Кг/палл
                 </button>
             </div>
         </div>

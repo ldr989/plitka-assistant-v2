@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import useLocalStorage from "./hooks/useLocalStorage.js"; // 1. Импортируем хук
 import Header from "./components/Header";
 import ImagesTab from "./components/ImagesTab";
 import PropertiesTab from "./components/PropertiesTab";
@@ -6,20 +7,23 @@ import StatusBar from "./components/StatusBar";
 import "./App.css";
 
 function App() {
-    const [activeTab, setActiveTab] = useState("images");
+    // 2. Заменяем useState на useLocalStorage
+    const [activeTab, setActiveTab] = useLocalStorage("active-tab", "images");
 
     const defaultStatus = "Жду указаний";
     const [statusMessage, setStatusMessage] = useState(defaultStatus);
-    const [isError, setIsError] = useState(false); // Новое состояние для отслеживания ошибок
+    const [isError, setIsError] = useState(false);
+    const [isLoading, setIsLoading] = useState(false); // Состояние для шестеренки
     const statusTimer = useRef(null);
 
-    // Функция для УСПЕШНЫХ операций
     const manageStatus = (inProgressMessage, durationMs) => {
         clearTimeout(statusTimer.current);
-        setIsError(false); // Сбрасываем флаг ошибки
+        setIsError(false);
+        setIsLoading(true); // <-- Показываем шестеренку
         setStatusMessage(inProgressMessage);
 
         statusTimer.current = setTimeout(() => {
+            setIsLoading(false); // <-- Прячем шестеренку
             setStatusMessage("Готово");
             statusTimer.current = setTimeout(() => {
                 setStatusMessage(defaultStatus);
@@ -27,13 +31,12 @@ function App() {
         }, durationMs);
     };
 
-    // Новая функция для НЕУДАЧНЫХ операций
     const manageError = (errorMessage) => {
         clearTimeout(statusTimer.current);
-        setIsError(true); // Устанавливаем флаг ошибки
+        setIsError(true);
+        setIsLoading(false); // <-- Прячем шестеренку в случае ошибки
         setStatusMessage(errorMessage);
 
-        // Через 5 секунд возвращаемся к стандартному сообщению
         statusTimer.current = setTimeout(() => {
             setStatusMessage(defaultStatus);
             setIsError(false);
@@ -45,7 +48,6 @@ function App() {
             <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <main className="tab-content">
-                {/* Передаем обе функции в дочерние компоненты */}
                 {activeTab === "images" && (
                     <ImagesTab
                         manageStatus={manageStatus}
@@ -60,7 +62,12 @@ function App() {
                 )}
             </main>
 
-            <StatusBar message={statusMessage} isError={isError} />
+            {/* 3. Передаем isLoading в StatusBar */}
+            <StatusBar
+                message={statusMessage}
+                isError={isError}
+                isLoading={isLoading}
+            />
         </div>
     );
 }
