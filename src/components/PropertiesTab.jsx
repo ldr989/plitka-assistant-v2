@@ -90,6 +90,24 @@ function PropertiesTab({ manageStatus, manageError }) {
         }
     };
 
+    const handleDuplicateTemplate = (templateId) => {
+        const templateToDuplicate = templates.find((t) => t.id === templateId);
+        if (!templateToDuplicate) return;
+
+        const newTemplate = JSON.parse(JSON.stringify(templateToDuplicate));
+
+        newTemplate.id = Date.now();
+        newTemplate.name = `${templateToDuplicate.name} (Копия)`;
+
+        const originalIndex = templates.findIndex((t) => t.id === templateId);
+
+        const newTemplates = [...templates];
+        newTemplates.splice(originalIndex + 1, 0, newTemplate);
+
+        setTemplates(newTemplates);
+        manageStatus(`Шаблон "${templateToDuplicate.name}" скопирован`, 1500);
+    };
+
     const handleUpdateTemplate = (updatedTemplate) => {
         if (!updatedTemplate.name.trim()) {
             manageError("Название шаблона не может быть пустым");
@@ -130,13 +148,15 @@ function PropertiesTab({ manageStatus, manageError }) {
                         return;
                     }
                     const result = injectionResults[0].result;
-                    if (result.success) {
+                    if (result && result.success) {
                         const pageProps = result.data.properties;
                         const pagePropIds = new Set(pageProps.map((p) => p.id));
                         const templateProps = activeTemplate.properties;
+
                         const missing = templateProps.filter(
                             (templateProp) => !pagePropIds.has(templateProp.id)
                         );
+
                         setMissingProperties(missing);
                         if (missing.length > 0) {
                             manageStatus(
@@ -150,7 +170,11 @@ function PropertiesTab({ manageStatus, manageError }) {
                             );
                         }
                     } else {
-                        manageError(result.message);
+                        manageError(
+                            result
+                                ? result.message
+                                : "Скрипт не вернул результат."
+                        );
                         setMissingProperties([]);
                     }
                 }
@@ -330,6 +354,17 @@ function PropertiesTab({ manageStatus, manageError }) {
                                             }
                                         >
                                             <Icon name="pencil" />
+                                        </button>
+                                        <button
+                                            className="button small icon-button"
+                                            title="Дублировать"
+                                            onClick={() =>
+                                                handleDuplicateTemplate(
+                                                    template.id
+                                                )
+                                            }
+                                        >
+                                            <Icon name="copy" />
                                         </button>
                                         <button
                                             className="button small icon-button danger"

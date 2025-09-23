@@ -1,13 +1,20 @@
-// src/utils/page-scripts.js
-
-// Эта функция будет запущена на странице для сбора всех свойств
 export const getPropertiesFromPage = () => {
-    const props = [];
     try {
-        const formContainer = document.querySelector(
-            "#plumbing-attributevalue-content_type-object_id-group"
+        const props = [];
+        const anyPropertyElement = document.querySelector(
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]'
         );
-        if (formContainer && formContainer.classList.contains("grp-closed")) {
+
+        // Если на странице вообще нет свойств, сразу возвращаем пустой результат
+        if (!anyPropertyElement) {
+            return {
+                success: true,
+                data: { properties: [], length: "", width: "" },
+            };
+        }
+
+        const formContainer = anyPropertyElement.closest(".grp-closed");
+        if (formContainer) {
             formContainer.classList.remove("grp-closed");
             formContainer.classList.add("grp-open");
         }
@@ -18,12 +25,11 @@ export const getPropertiesFromPage = () => {
         const widthValue = widthInput ? widthInput.value : "";
 
         const getScrapedValue = (element) => {
-            if (!element) return null;
-            if (
-                element.tagName === "SELECT" ||
-                (element.tagName === "INPUT" && element.type === "text")
-            )
-                return element.value;
+            if (!element) return "";
+            // Корректно обрабатываем SELECT и все типы INPUT
+            if (element.tagName === "SELECT" || element.tagName === "INPUT") {
+                return element.value || "";
+            }
             const checkedRadios = element.querySelectorAll(
                 'input[type="radio"]:checked'
             );
@@ -36,30 +42,30 @@ export const getPropertiesFromPage = () => {
             const checkedCheckboxes = element.querySelectorAll(
                 'input[type="checkbox"]:checked'
             );
-            if (checkedCheckboxes.length > 0)
+            if (checkedCheckboxes.length > 0) {
                 return Array.from(checkedCheckboxes).map((cb) => cb.value);
-            return null;
+            }
+            if (element.querySelectorAll('input[type="checkbox"]').length > 0) {
+                return [];
+            }
+            return "";
         };
 
-        const propSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
-        );
-        const valueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+        const propertyRows = document.querySelectorAll(
+            ".grp-dynamic-form:not(.grp-empty-form)"
         );
 
-        if (propSelects.length !== valueElements.length) {
-            return {
-                success: false,
-                message: "Ошибка: несоответствие количеств свойств и значений.",
-            };
-        }
+        propertyRows.forEach((row) => {
+            const propSelect = row.querySelector('[id$="-attribute"]');
+            const valueElement = row.querySelector('[id$="-value"]');
 
-        propSelects.forEach((propSelect, index) => {
-            const propId = propSelect.value;
-            if (propId) {
-                const value = getScrapedValue(valueElements[index]);
-                props.push({ id: propId, value: value });
+            if (propSelect && valueElement) {
+                const propIdString = propSelect.value;
+                if (propIdString) {
+                    const propId = Number(propIdString);
+                    const value = getScrapedValue(valueElement);
+                    props.push({ id: propId, value: value });
+                }
             }
         });
 
@@ -68,11 +74,13 @@ export const getPropertiesFromPage = () => {
             data: { properties: props, length: lengthValue, width: widthValue },
         };
     } catch (e) {
-        return { success: false, message: `Произошла ошибка: ${e.message}` };
+        return {
+            success: false,
+            message: `Произошла ошибка в page-script: ${e.message}`,
+        };
     }
 };
 
-// Эта функция будет добавлять на страницу формы для недостающих свойств
 export const addPropertyFormsOnPage = (missingPropIds) => {
     let addButton = null;
     const strongElements = document.querySelectorAll("strong");
@@ -123,16 +131,14 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
 
             window.scrollTo(0, document.body.scrollHeight * 0.97);
 
-            // --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
-            setTimeout(addNextForm, 100); // Было 200
-        }, 75); // Было 150
+            setTimeout(addNextForm, 100);
+        }, 75);
     }
 
     addNextForm();
     return { success: true };
 };
 
-// Заполняет формы на странице значениями из шаблона ПОСЛЕДОВАТЕЛЬНО
 export const fillPropertyFormsOnPage = async (propsToFill) => {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -172,22 +178,26 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
     };
 
     let filledCount = 0;
-    const allPropSelects = document.querySelectorAll(
-        '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
-    );
-    const allValueElements = document.querySelectorAll(
-        '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+    // Используем более надежный метод поиска строк, как в getPropertiesFromPage
+    const propertyRows = document.querySelectorAll(
+        ".grp-dynamic-form:not(.grp-empty-form)"
     );
 
     for (const propFromTemplate of propsToFill) {
-        for (let i = 0; i < allPropSelects.length; i++) {
-            if (allPropSelects[i].value === propFromTemplate.id) {
-                const valueElement = allValueElements[i];
+        for (const row of propertyRows) {
+            const propSelect = row.querySelector('[id$="-attribute"]');
+            if (
+                propSelect &&
+                propSelect.value === String(propFromTemplate.id)
+            ) {
+                const valueElement = row.querySelector('[id$="-value"]');
                 if (valueElement) {
                     setElementValue(valueElement, propFromTemplate.value);
                     filledCount++;
                     await delay(100);
                 }
+                // Прерываем внутренний цикл, так как свойство уже найдено и обработано
+                break;
             }
         }
     }

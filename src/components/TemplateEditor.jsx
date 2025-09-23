@@ -1,8 +1,25 @@
 /* eslint-disable no-undef */
 import React, { useState, useEffect, useCallback } from "react";
+// Импорты из dnd-kit
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import { propertiesList } from "../data/propertiesList.js";
 import Icon from "./Icon.jsx";
 import useUndoableState from "../hooks/useUndoableState.js";
+import { getPropertiesFromPage } from "../utils/page-scripts.js";
 
 // --- Вспомогательные компоненты ---
 
@@ -136,64 +153,74 @@ const getDisplayValue = (propId, value) => {
     }
 };
 
-const getPropertiesFromPage = () => {
-    const props = [];
-    try {
-        const lengthInput = document.querySelector("#id_length");
-        const widthInput = document.querySelector("#id_width");
-        const lengthValue = lengthInput ? lengthInput.value : "";
-        const widthValue = widthInput ? widthInput.value : "";
+// Компонент для одного перетаскиваемого элемента списка
+function SortablePropertyItem({
+    prop,
+    index,
+    onEdit,
+    onDelete,
+    onCalculate,
+    onRecalculateShape,
+    calculablePropIds,
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({ id: prop.id });
 
-        const getScrapedValue = (element) => {
-            if (!element) return null;
-            if (
-                element.tagName === "SELECT" ||
-                (element.tagName === "INPUT" && element.type === "text")
-            )
-                return element.value;
-            const checkedRadios = element.querySelectorAll(
-                'input[type="radio"]:checked'
-            );
-            if (checkedRadios.length > 0) {
-                const val = checkedRadios[0].value;
-                if (val === "True") return true;
-                if (val === "False") return false;
-                return val;
-            }
-            const checkedCheckboxes = element.querySelectorAll(
-                'input[type="checkbox"]:checked'
-            );
-            if (checkedCheckboxes.length > 0)
-                return Array.from(checkedCheckboxes).map((cb) => cb.value);
-            return null;
-        };
-        const propSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
-        );
-        const valueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
-        );
-        if (propSelects.length !== valueElements.length)
-            return {
-                success: false,
-                message: "Ошибка: несоответствие свойств и значений.",
-            };
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
 
-        propSelects.forEach((propSelect, index) => {
-            const propId = propSelect.value;
-            if (!propId) return;
-            const value = getScrapedValue(valueElements[index]);
-            if (value !== null) props.push({ id: propId, value: value });
-        });
-
-        return {
-            success: true,
-            data: { properties: props, length: lengthValue, width: widthValue },
-        };
-    } catch (e) {
-        return { success: false, message: `Произошла ошибка: ${e.message}` };
-    }
-};
+    return (
+        <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            <div className="drag-handle">
+                <span className="prop-number">{index + 1}.</span>
+            </div>
+            <div className="prop-details">
+                <span className="prop-name">
+                    {propertiesList[prop.id]?.text}
+                </span>
+                <span className="prop-value">
+                    {getDisplayValue(prop.id, prop.value)}
+                </span>
+            </div>
+            <div className="template-actions">
+                {prop.id === "4287" && (
+                    <button
+                        className="button small icon-button"
+                        title="Пересчитать Форму"
+                        onClick={onRecalculateShape}
+                    >
+                        <Icon name="help" />
+                    </button>
+                )}
+                {calculablePropIds.includes(prop.id) && (
+                    <button
+                        className="button small calc-button"
+                        title="Вычислить"
+                        onClick={() => onCalculate(prop.id)}
+                    >
+                        Calc
+                    </button>
+                )}
+                <button
+                    className="button small icon-button"
+                    title="Редактировать свойство"
+                    onClick={() => onEdit(prop)}
+                >
+                    <Icon name="pencil" />
+                </button>
+                <button
+                    className="button small icon-button danger"
+                    title="Удалить свойство"
+                    onClick={() => onDelete(prop.id)}
+                >
+                    <Icon name="trash" />
+                </button>
+            </div>
+        </li>
+    );
+}
 
 // --- Основной компонент Редактора ---
 function TemplateEditor({
@@ -219,6 +246,14 @@ function TemplateEditor({
     const [editingPropId, setEditingPropId] = useState(null);
     const [editingPropValue, setEditingPropValue] = useState(null);
 
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
+
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.ctrlKey && event.code === "KeyZ") {
@@ -235,6 +270,19 @@ function TemplateEditor({
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [undoProperties, manageStatus, onBack]);
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setProperties((items) => {
+                const oldIndex = items.findIndex(
+                    (item) => item.id === active.id
+                );
+                const newIndex = items.findIndex((item) => item.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
 
     const calculatePropertyValue = useCallback(
         (propIdToCalc) => {
@@ -443,20 +491,42 @@ function TemplateEditor({
                     world: "MAIN",
                 },
                 (injectionResults) => {
+                    if (chrome.runtime.lastError) {
+                        manageError(
+                            "Ошибка выполнения скрипта: " +
+                                chrome.runtime.lastError.message
+                        );
+                        return;
+                    }
                     if (
                         !injectionResults ||
                         !injectionResults[0] ||
-                        chrome.runtime.lastError
+                        !injectionResults[0].result
                     ) {
-                        manageError(
-                            "Ошибка: не удалось выполнить скрипт импорта"
-                        );
+                        manageError("Ошибка: скрипт не вернул результат.");
                         return;
                     }
                     const result = injectionResults[0].result;
                     if (result.success) {
+                        const pageProperties = result.data.properties;
+                        const knownProperties = pageProperties.filter((p) =>
+                            Object.prototype.hasOwnProperty.call(
+                                propertiesList,
+                                p.id
+                            )
+                        );
+
+                        const unknownCount =
+                            pageProperties.length - knownProperties.length;
+                        if (unknownCount > 0) {
+                            manageStatus(
+                                `Импортировано. Проигнорировано ${unknownCount} неизвестных свойств.`,
+                                2500
+                            );
+                        }
+
                         if (mode === "replace") {
-                            setProperties(result.data.properties);
+                            setProperties(knownProperties);
                             setLength(result.data.length);
                             setWidth(result.data.width);
                             manageStatus("Данные успешно заменены", 1500);
@@ -464,9 +534,10 @@ function TemplateEditor({
                             const existingPropIds = new Set(
                                 properties.map((p) => p.id)
                             );
-                            const newProperties = result.data.properties.filter(
+                            const newProperties = knownProperties.filter(
                                 (p) => !existingPropIds.has(p.id)
                             );
+
                             if (newProperties.length > 0) {
                                 setProperties((prev) => [
                                     ...prev,
@@ -484,7 +555,10 @@ function TemplateEditor({
                             }
                         }
                     } else {
-                        manageError(result.message);
+                        manageError(
+                            result.message ||
+                                "Произошла неизвестная ошибка в скрипте."
+                        );
                     }
                 }
             );
@@ -535,7 +609,7 @@ function TemplateEditor({
     };
 
     const availableProperties = Object.keys(propertiesList).filter(
-        (id) => !properties.some((p) => p.id === id)
+        (id) => !properties.some((p) => String(p.id) === id)
     );
     const calculablePropIds = [
         "4288",
@@ -591,96 +665,76 @@ function TemplateEditor({
             <h3>Свойства в шаблоне:</h3>
             <div className="properties-list">
                 {properties.length > 0 ? (
-                    <ul className="template-list">
-                        {properties.map((prop) =>
-                            editingPropId === prop.id ? (
-                                <li key={prop.id} className="editing-item">
-                                    <div className="prop-details">
-                                        <span className="prop-name">
-                                            {propertiesList[prop.id]?.text}
-                                        </span>
-                                        <PropertyValueInput
-                                            propId={prop.id}
-                                            value={editingPropValue}
-                                            onChange={setEditingPropValue}
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={properties}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <ul className="template-list">
+                                {properties.map((prop, index) =>
+                                    editingPropId === prop.id ? (
+                                        <li
+                                            key={prop.id}
+                                            className="editing-item"
+                                        >
+                                            <div className="prop-details">
+                                                <span className="prop-name">
+                                                    {
+                                                        propertiesList[prop.id]
+                                                            ?.text
+                                                    }
+                                                </span>
+                                                <PropertyValueInput
+                                                    propId={prop.id}
+                                                    value={editingPropValue}
+                                                    onChange={
+                                                        setEditingPropValue
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="template-actions">
+                                                <button
+                                                    className="button small primary"
+                                                    onClick={
+                                                        handleUpdateProperty
+                                                    }
+                                                >
+                                                    Сохранить
+                                                </button>
+                                                <button
+                                                    className="button small secondary"
+                                                    onClick={handleCancelEdit}
+                                                >
+                                                    Отмена
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ) : (
+                                        <SortablePropertyItem
+                                            key={prop.id}
+                                            prop={prop}
+                                            index={index}
+                                            onEdit={handleEditClick}
+                                            onDelete={handleDeleteProperty}
+                                            onCalculate={
+                                                handleCalculateProperty
+                                            }
+                                            onRecalculateShape={
+                                                handleRecalculateShape
+                                            }
+                                            calculablePropIds={
+                                                calculablePropIds
+                                            }
                                         />
-                                    </div>
-                                    <div className="template-actions">
-                                        <button
-                                            className="button small primary"
-                                            onClick={handleUpdateProperty}
-                                        >
-                                            Сохранить
-                                        </button>
-                                        <button
-                                            className="button small secondary"
-                                            onClick={handleCancelEdit}
-                                        >
-                                            Отмена
-                                        </button>
-                                    </div>
-                                </li>
-                            ) : (
-                                <li key={prop.id}>
-                                    <div className="prop-details">
-                                        <span className="prop-name">
-                                            {propertiesList[prop.id]?.text}
-                                        </span>
-                                        <span className="prop-value">
-                                            {getDisplayValue(
-                                                prop.id,
-                                                prop.value
-                                            )}
-                                        </span>
-                                    </div>
-                                    <div className="template-actions">
-                                        {prop.id === "4287" && (
-                                            <button
-                                                className="button small icon-button"
-                                                title="Пересчитать Форму"
-                                                onClick={handleRecalculateShape}
-                                            >
-                                                <Icon name="help" />
-                                            </button>
-                                        )}
-                                        {calculablePropIds.includes(
-                                            prop.id
-                                        ) && (
-                                            <button
-                                                className="button small calc-button"
-                                                title="Вычислить"
-                                                onClick={() =>
-                                                    handleCalculateProperty(
-                                                        prop.id
-                                                    )
-                                                }
-                                            >
-                                                Calc
-                                            </button>
-                                        )}
-                                        <button
-                                            className="button small icon-button"
-                                            title="Редактировать свойство"
-                                            onClick={() =>
-                                                handleEditClick(prop)
-                                            }
-                                        >
-                                            <Icon name="pencil" />
-                                        </button>
-                                        <button
-                                            className="button small icon-button danger"
-                                            title="Удалить свойство"
-                                            onClick={() =>
-                                                handleDeleteProperty(prop.id)
-                                            }
-                                        >
-                                            <Icon name="trash" />
-                                        </button>
-                                    </div>
-                                </li>
-                            )
-                        )}
-                    </ul>
+                                    )
+                                )}
+                            </ul>
+                        </SortableContext>
+                    </DndContext>
                 ) : (
                     <p className="empty-list-message">
                         В этом шаблоне пока нет свойств.
