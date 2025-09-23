@@ -166,16 +166,18 @@ function TemplateEditor({
             };
 
             switch (propIdToCalc) {
-                case "4362": {
+                case 4362: {
+                    // Площадь плитки
                     const l = safeParseFloat(length);
                     const w = safeParseFloat(width);
                     if (!isNaN(l) && !isNaN(w) && l > 0 && w > 0)
                         return truncateToTwoDecimals((l / 100) * (w / 100));
                     break;
                 }
-                case "4354": {
-                    const boxWeight = findPropValue("4357");
-                    const amountInBox = findPropValue("4288");
+                case 4354: {
+                    // Вес 1 шт. [кг]
+                    const boxWeight = findPropValue(4357);
+                    const amountInBox = findPropValue(4288);
                     if (
                         !isNaN(boxWeight) &&
                         !isNaN(amountInBox) &&
@@ -184,20 +186,22 @@ function TemplateEditor({
                         return truncateToTwoDecimals(boxWeight / amountInBox);
                     break;
                 }
-                case "4355": {
-                    const boxWeight = findPropValue("4357");
-                    const m2InBox = findPropValue("4289");
+                case 4355: {
+                    // Вес 1 кв.м. [кг]
+                    const boxWeight = findPropValue(4357);
+                    const m2InBox = findPropValue(4289);
                     if (!isNaN(boxWeight) && !isNaN(m2InBox) && m2InBox > 0)
                         return truncateToTwoDecimals(boxWeight / m2InBox);
                     break;
                 }
-                case "4357": {
-                    const m2Weight = findPropValue("4355");
-                    const m2InBox = findPropValue("4289");
+                case 4357: {
+                    // Вес упаковки [кг]
+                    const m2Weight = findPropValue(4355);
+                    const m2InBox = findPropValue(4289);
                     if (!isNaN(m2Weight) && !isNaN(m2InBox))
                         return truncateToTwoDecimals(m2Weight * m2InBox);
-                    const palletWeight = findPropValue("5277");
-                    const boxesInPallet = findPropValue("4947");
+                    const palletWeight = findPropValue(5277);
+                    const boxesInPallet = findPropValue(4947);
                     if (
                         !isNaN(palletWeight) &&
                         !isNaN(boxesInPallet) &&
@@ -208,30 +212,34 @@ function TemplateEditor({
                         );
                     break;
                 }
-                case "4289": {
-                    const amountInBox = findPropValue("4288");
-                    const tileArea = findPropValue("4362");
+                case 4289: {
+                    // Кол-во м2 в упаковке [м2]
+                    const amountInBox = findPropValue(4288);
+                    const tileArea = findPropValue(4362);
                     if (!isNaN(amountInBox) && !isNaN(tileArea))
                         return truncateToTwoDecimals(amountInBox * tileArea);
                     break;
                 }
-                case "4356": {
-                    const boxesInPallet = findPropValue("4947");
-                    const m2InBox = findPropValue("4289");
+                case 4356: {
+                    // Кол-во в палетте кв.м.
+                    const boxesInPallet = findPropValue(4947);
+                    const m2InBox = findPropValue(4289);
                     if (!isNaN(boxesInPallet) && !isNaN(m2InBox))
                         return truncateToTwoDecimals(boxesInPallet * m2InBox);
                     break;
                 }
-                case "4947": {
-                    const m2InPallet = findPropValue("4356");
-                    const m2InBox = findPropValue("4289");
+                case 4947: {
+                    // Количество коробок на палетте [шт]
+                    const m2InPallet = findPropValue(4356);
+                    const m2InBox = findPropValue(4289);
                     if (!isNaN(m2InPallet) && !isNaN(m2InBox) && m2InBox > 0)
                         return truncateToTwoDecimals(m2InPallet / m2InBox);
                     break;
                 }
-                case "5277": {
-                    const boxWeight = findPropValue("4357");
-                    const boxesInPallet = findPropValue("4947");
+                case 5277: {
+                    // Количество кг. в палетте
+                    const boxWeight = findPropValue(4357);
+                    const boxesInPallet = findPropValue(4947);
                     if (!isNaN(boxWeight) && !isNaN(boxesInPallet))
                         return truncateToTwoDecimals(boxWeight * boxesInPallet);
                     break;
@@ -281,7 +289,12 @@ function TemplateEditor({
         }
         setProperties((prev) => [
             ...prev,
-            { id: selectedPropId, value: currentPropValue, ignored: false },
+            // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: ID приводится к числовому типу ---
+            {
+                id: Number(selectedPropId),
+                value: currentPropValue,
+                ignored: false,
+            },
         ]);
         setIsAddingProp(false);
         setSelectedPropId("");
@@ -449,7 +462,8 @@ function TemplateEditor({
         (event) => {
             const newPropId = event.target.value;
             setSelectedPropId(newPropId);
-            const calculatedValue = calculatePropertyValue(newPropId);
+            // Приводим строковый ID к числу перед вычислением
+            const calculatedValue = calculatePropertyValue(Number(newPropId));
             setCurrentPropValue(calculatedValue);
         },
         [calculatePropertyValue]
@@ -483,7 +497,8 @@ function TemplateEditor({
         }
         const shapeValue = l === w ? "6361" : "6360";
         setProperties((prev) =>
-            prev.map((p) => (p.id === "4287" ? { ...p, value: shapeValue } : p))
+            // ID 4287 - "Форма"
+            prev.map((p) => (p.id === 4287 ? { ...p, value: shapeValue } : p))
         );
         manageStatus('Свойство "Форма" пересчитано.', 1500);
     };
@@ -498,15 +513,7 @@ function TemplateEditor({
         (id) => !properties.some((p) => String(p.id) === id)
     );
     const calculablePropIds = [
-        "4288",
-        "4289",
-        "4357",
-        "4362",
-        "4354",
-        "4355",
-        "4947",
-        "4356",
-        "5277",
+        4288, 4289, 4357, 4362, 4354, 4355, 4947, 4356, 5277,
     ];
 
     return (
@@ -675,7 +682,7 @@ function TemplateEditor({
                     </select>
                     {selectedPropId && (
                         <PropertyValueInput
-                            propId={selectedPropId}
+                            propId={Number(selectedPropId)}
                             value={currentPropValue}
                             onChange={setCurrentPropValue}
                         />
