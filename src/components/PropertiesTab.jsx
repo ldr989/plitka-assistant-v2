@@ -1,14 +1,179 @@
 /* eslint-disable no-undef */
 import React, { useState, useEffect, useCallback } from "react";
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import useUndoableState from "../hooks/useUndoableState.js";
 import TemplateEditor from "./TemplateEditor.jsx";
+import { PropertyValueInput } from "./PropertyComponents.jsx";
+import { getDisplayValue } from "./property-helpers.jsx";
 import Icon from "./Icon.jsx";
 import Calculator from "./Calculator.jsx";
 import {
     getPropertiesFromPage,
     addPropertyFormsOnPage,
     fillPropertyFormsOnPage,
+    deleteEmptyProperties, // --- НОВЫЙ ИМПОРТ ---
 } from "../utils/page-scripts.js";
+import { propertiesList } from "../data/propertiesList.js";
+
+function SortableTemplateItem({
+    template,
+    index,
+    onEdit,
+    onDuplicate,
+    onDelete,
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({ id: template.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <li ref={setNodeRef} style={style} {...attributes}>
+            <div className="drag-handle" {...listeners}>
+                <span className="prop-number">{index + 1}.</span>
+            </div>
+            <div className="template-info">
+                <span className="template-name">{template.name}</span>
+                <span className="template-prop-count">
+                    Свойств: {template.properties.length}
+                </span>
+            </div>
+            <div className="template-actions">
+                <button
+                    className="button small icon-button"
+                    title="Редактировать"
+                    onClick={onEdit}
+                >
+                    <Icon name="pencil" />
+                </button>
+                <button
+                    className="button small icon-button"
+                    title="Дублировать"
+                    onClick={onDuplicate}
+                >
+                    <Icon name="copy" />
+                </button>
+                <button
+                    className="button small icon-button danger"
+                    title="Удалить"
+                    onClick={onDelete}
+                >
+                    <Icon name="trash" />
+                </button>
+            </div>
+        </li>
+    );
+}
+
+function InlinePropertyItem({
+    prop,
+    index,
+    isEditing,
+    editingValue,
+    onStartEdit,
+    onCancelEdit,
+    onSaveEdit,
+    onToggleIgnore,
+    onValueChange,
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({ id: prop.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <li
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            className={
+                isEditing ? "editing-item" : prop.ignored ? "ignored-item" : ""
+            }
+        >
+            <div className="handle-wrapper" {...listeners}>
+                <div className="drag-handle">
+                    <span className="prop-number">{index + 1}.</span>
+                </div>
+                <div className="prop-details">
+                    <span className="prop-name">
+                        {propertiesList[prop.id]?.text}
+                    </span>
+                    {isEditing ? (
+                        <PropertyValueInput
+                            propId={prop.id}
+                            value={editingValue}
+                            onChange={onValueChange}
+                        />
+                    ) : (
+                        <span className="prop-value">
+                            {getDisplayValue(prop.id, prop.value)}
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            <div className="template-actions">
+                {isEditing ? (
+                    <>
+                        <button
+                            className="button small primary"
+                            onClick={onSaveEdit}
+                        >
+                            Сохранить
+                        </button>
+                        <button
+                            className="button small secondary"
+                            onClick={onCancelEdit}
+                        >
+                            Отмена
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button
+                            className="button small icon-button"
+                            title={
+                                prop.ignored
+                                    ? "Включить свойство"
+                                    : "Игнорировать свойство"
+                            }
+                            onClick={onToggleIgnore}
+                        >
+                            <Icon name={prop.ignored ? "eye-off" : "eye"} />
+                        </button>
+                        <button
+                            className="button small icon-button"
+                            title="Редактировать"
+                            onClick={onStartEdit}
+                        >
+                            <Icon name="pencil" />
+                        </button>
+                    </>
+                )}
+            </div>
+        </li>
+    );
+}
 
 function PropertiesTab({ manageStatus, manageError }) {
     const [templates, setTemplates, setUndoableTemplates, undoTemplates] =
@@ -24,14 +189,106 @@ function PropertiesTab({ manageStatus, manageError }) {
 
     const [showTemplateList, setShowTemplateList] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+    const [showTemplateProperties, setShowTemplateProperties] = useState(false);
+    const [inlineEditingPropId, setInlineEditingPropId] = useState(null);
+    const [inlineEditingPropValue, setInlineEditingPropValue] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
-    useEffect(() => {
-        setMissingProperties(null);
-    }, [activeTemplateId]);
+    const [localProperties, setLocalProperties] = useState(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
+
+    const handleTemplateDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setTemplates((items) => {
+                const oldIndex = items.findIndex(
+                    (item) => item.id === active.id
+                );
+                const newIndex = items.findIndex((item) => item.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
 
     const activeTemplate = templates.find(
         (t) => String(t.id) === activeTemplateId
     );
+
+    useEffect(() => {
+        setMissingProperties(null);
+        setShowTemplateProperties(false);
+        setSearchTerm("");
+        if (activeTemplate) {
+            setLocalProperties(
+                JSON.parse(JSON.stringify(activeTemplate.properties))
+            );
+        } else {
+            setLocalProperties(null);
+        }
+    }, [activeTemplate]);
+
+    const handleUpdateTemplate = (updatedTemplate) => {
+        if (!updatedTemplate.name.trim()) {
+            manageError("Название шаблона не может быть пустым");
+            return;
+        }
+        setTemplates((prevTemplates) =>
+            prevTemplates.map((t) =>
+                t.id === updatedTemplate.id ? updatedTemplate : t
+            )
+        );
+        manageStatus(`Шаблон "${updatedTemplate.name}" обновлен`, 1500);
+    };
+
+    const handleInlinePropertiesDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = localProperties.findIndex(
+                (p) => p.id === active.id
+            );
+            const newIndex = localProperties.findIndex((p) => p.id === over.id);
+            setLocalProperties(arrayMove(localProperties, oldIndex, newIndex));
+        }
+    };
+
+    const handleToggleIgnoreProperty = (propId) => {
+        const newProperties = localProperties.map((p) =>
+            p.id === propId ? { ...p, ignored: !p.ignored } : p
+        );
+        setLocalProperties(newProperties);
+    };
+
+    const handleSaveInlineProperty = () => {
+        const newProperties = localProperties.map((p) =>
+            p.id === inlineEditingPropId
+                ? { ...p, value: inlineEditingPropValue }
+                : p
+        );
+        setLocalProperties(newProperties);
+        setInlineEditingPropId(null);
+        setInlineEditingPropValue(null);
+    };
+
+    const handleResetLocalChanges = () => {
+        if (!activeTemplate) return;
+        if (
+            confirm(
+                "Вы уверены, что хотите сбросить все локальные изменения для этого шаблона?"
+            )
+        ) {
+            setLocalProperties(
+                JSON.parse(JSON.stringify(activeTemplate.properties))
+            );
+            manageStatus("Изменения сброшены", 1500);
+        }
+    };
 
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -108,27 +365,11 @@ function PropertiesTab({ manageStatus, manageError }) {
         manageStatus(`Шаблон "${templateToDuplicate.name}" скопирован`, 1500);
     };
 
-    const handleUpdateTemplate = (updatedTemplate) => {
-        if (!updatedTemplate.name.trim()) {
-            manageError("Название шаблона не может быть пустым");
-            return;
-        }
-        setTemplates((prevTemplates) =>
-            prevTemplates.map((t) =>
-                t.id === updatedTemplate.id ? updatedTemplate : t
-            )
-        );
-        manageStatus(`Шаблон "${updatedTemplate.name}" сохранен`, 1500);
-    };
-
     const handleFindMissingProperties = () => {
-        if (!activeTemplate) return;
+        if (!activeTemplate || !localProperties) return;
         manageStatus("Ищу свойства на странице...", 2000);
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]) {
-                manageError("Ошибка: активная вкладка не найдена");
-                return;
-            }
+            if (!tabs[0]) return;
             chrome.scripting.executeScript(
                 {
                     target: { tabId: tabs[0].id },
@@ -136,46 +377,31 @@ function PropertiesTab({ manageStatus, manageError }) {
                     world: "MAIN",
                 },
                 (injectionResults) => {
-                    if (
-                        chrome.runtime.lastError ||
-                        !injectionResults ||
-                        !injectionResults[0]
-                    ) {
-                        manageError(
-                            "Ошибка: не удалось получить свойства со страницы"
-                        );
-                        setMissingProperties([]);
-                        return;
-                    }
+                    if (!injectionResults || !injectionResults[0]) return;
                     const result = injectionResults[0].result;
                     if (result && result.success) {
-                        const pageProps = result.data.properties;
-                        const pagePropIds = new Set(pageProps.map((p) => p.id));
-                        const templateProps = activeTemplate.properties;
-
-                        const missing = templateProps.filter(
-                            (templateProp) => !pagePropIds.has(templateProp.id)
+                        const pagePropIds = new Set(
+                            result.data.properties.map((p) => p.id)
                         );
-
+                        const templateProps = localProperties.filter(
+                            (p) => !p.ignored
+                        );
+                        const missing = templateProps.filter(
+                            (p) => !pagePropIds.has(p.id)
+                        );
                         setMissingProperties(missing);
-                        if (missing.length > 0) {
-                            manageStatus(
-                                `Найдено отсутствующих свойств: ${missing.length}`,
-                                4000
-                            );
-                        } else {
-                            manageStatus(
-                                "Все свойства из шаблона уже есть на странице.",
-                                4000
-                            );
-                        }
+                        manageStatus(
+                            missing.length > 0
+                                ? `Найдено отсутствующих свойств: ${missing.length}`
+                                : "Все свойства из шаблона уже есть на странице.",
+                            4000
+                        );
                     } else {
                         manageError(
                             result
                                 ? result.message
                                 : "Скрипт не вернул результат."
                         );
-                        setMissingProperties([]);
                     }
                 }
             );
@@ -185,81 +411,53 @@ function PropertiesTab({ manageStatus, manageError }) {
     const handleAddMissingForms = () => {
         if (!missingProperties || missingProperties.length === 0) return;
         const missingPropIds = missingProperties.map((p) => p.id);
-        const estimatedTime = 500 + missingPropIds.length * 350;
         manageStatus(
-            `Добавляю ${missingPropIds.length} форм(у) на страницу...`,
-            estimatedTime
+            `Добавляю ${missingPropIds.length} форм(у)...`,
+            500 + missingPropIds.length * 350
         );
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]) {
-                manageError("Ошибка: активная вкладка не найдена");
-                return;
-            }
-            chrome.scripting.executeScript(
-                {
-                    target: { tabId: tabs[0].id },
-                    func: addPropertyFormsOnPage,
-                    args: [missingPropIds],
-                    world: "MAIN",
-                },
-                () => {
-                    if (chrome.runtime.lastError) {
-                        manageError(
-                            "Ошибка: не удалось запустить скрипт добавления форм"
-                        );
-                    }
-                }
-            );
+            if (!tabs[0]) return;
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: addPropertyFormsOnPage,
+                args: [missingPropIds],
+                world: "MAIN",
+            });
         });
     };
 
     const handleFillMissingForms = () => {
         if (!missingProperties || missingProperties.length === 0) return;
-        const estimatedTime = 500 + missingProperties.length * 150;
         manageStatus(
             `Заполняю ${missingProperties.length} форм(у)...`,
-            estimatedTime
+            500 + missingProperties.length * 150
         );
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]) {
-                manageError("Ошибка: активная вкладка не найдена");
-                return;
-            }
-            chrome.scripting.executeScript(
-                {
-                    target: { tabId: tabs[0].id },
-                    func: fillPropertyFormsOnPage,
-                    args: [missingProperties],
-                    world: "MAIN",
-                },
-                () => {
-                    if (chrome.runtime.lastError) {
-                        manageError(
-                            "Ошибка: не удалось запустить скрипт заполнения"
-                        );
-                    }
-                }
-            );
+            if (!tabs[0]) return;
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: fillPropertyFormsOnPage,
+                args: [missingProperties],
+                world: "MAIN",
+            });
         });
     };
 
     const handleReplaceAllValues = () => {
-        if (!activeTemplate) return;
-        const propsToFill = activeTemplate.properties;
+        if (!activeTemplate || !localProperties) return;
+        const propsToFill = localProperties.filter((p) => !p.ignored);
         if (propsToFill.length === 0) {
-            manageError("В активном шаблоне нет свойств для замены.");
+            manageError(
+                "В шаблоне нет свойств для замены (с учетом игнорируемых)."
+            );
             return;
         }
-        const estimatedTime = 500 + propsToFill.length * 150;
         manageStatus(
             `Заменяю значения для ${propsToFill.length} свойств...`,
-            estimatedTime
+            500 + propsToFill.length * 150
         );
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]) {
-                manageError("Ошибка: активная вкладка не найдена");
-                return;
-            }
+            if (!tabs[0]) return;
             chrome.scripting.executeScript({
                 target: { tabId: tabs[0].id },
                 func: fillPropertyFormsOnPage,
@@ -268,6 +466,41 @@ function PropertiesTab({ manageStatus, manageError }) {
             });
         });
     };
+
+    // --- НОВЫЙ ОБРАБОТЧИК ---
+    const handleDeleteEmptyProperties = () => {
+        manageStatus("Удаляю пустые свойства со страницы...", 2000);
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]) {
+                manageError("Активная вкладка не найдена.");
+                return;
+            }
+            chrome.scripting.executeScript(
+                {
+                    target: { tabId: tabs[0].id },
+                    func: deleteEmptyProperties,
+                    world: "MAIN",
+                },
+                (injectionResults) => {
+                    if (!injectionResults || !injectionResults[0]) return;
+                    const result = injectionResults[0].result;
+                    if (result && result.message) {
+                        manageStatus(result.message, 3000);
+                    }
+                }
+            );
+        });
+    };
+
+    const filteredInlineProperties = localProperties
+        ? localProperties.filter((prop) => {
+              const propInfo = propertiesList[prop.id];
+              if (!propInfo) return false;
+              return propInfo.text
+                  .toLowerCase()
+                  .includes(searchTerm.toLowerCase());
+          })
+        : [];
 
     const editingTemplate = templates.find((t) => t.id === editingTemplateId);
     if (editingTemplate) {
@@ -295,7 +528,6 @@ function PropertiesTab({ manageStatus, manageError }) {
                         <Icon name="close" />
                     </button>
                 </div>
-
                 {isAdding ? (
                     <div className="add-template-form">
                         <input
@@ -324,64 +556,48 @@ function PropertiesTab({ manageStatus, manageError }) {
                         + Добавить новый шаблон
                     </button>
                 )}
-
                 <div className="template-list-container">
                     {templates.length === 0 ? (
                         <p className="empty-list-message">
                             Ваш список шаблонов пуст.
                         </p>
                     ) : (
-                        <ul className="template-list">
-                            {templates.map((template) => (
-                                <li key={template.id}>
-                                    <div className="template-info">
-                                        <span className="template-name">
-                                            {template.name}
-                                        </span>
-                                        <span className="template-prop-count">
-                                            Свойств:{" "}
-                                            {template.properties.length}
-                                        </span>
-                                    </div>
-                                    <div className="template-actions">
-                                        <button
-                                            className="button small icon-button"
-                                            title="Редактировать"
-                                            onClick={() =>
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleTemplateDragEnd}
+                        >
+                            <SortableContext
+                                items={templates}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <ul className="template-list">
+                                    {templates.map((template, index) => (
+                                        <SortableTemplateItem
+                                            key={template.id}
+                                            template={template}
+                                            index={index}
+                                            onEdit={() =>
                                                 setEditingTemplateId(
                                                     template.id
                                                 )
                                             }
-                                        >
-                                            <Icon name="pencil" />
-                                        </button>
-                                        <button
-                                            className="button small icon-button"
-                                            title="Дублировать"
-                                            onClick={() =>
+                                            onDuplicate={() =>
                                                 handleDuplicateTemplate(
                                                     template.id
                                                 )
                                             }
-                                        >
-                                            <Icon name="copy" />
-                                        </button>
-                                        <button
-                                            className="button small icon-button danger"
-                                            title="Удалить"
-                                            onClick={() =>
+                                            onDelete={() =>
                                                 handleDeleteTemplate(
                                                     template.id,
                                                     template.name
                                                 )
                                             }
-                                        >
-                                            <Icon name="trash" />
-                                        </button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                                        />
+                                    ))}
+                                </ul>
+                            </SortableContext>
+                        </DndContext>
                     )}
                 </div>
             </div>
@@ -391,7 +607,15 @@ function PropertiesTab({ manageStatus, manageError }) {
     return (
         <div>
             <div className="section">
-                <h2>Свойства плитки</h2>
+                <div className="section-header">
+                    <h2>Свойства плитки</h2>
+                    <button
+                        className="button secondary"
+                        onClick={() => setShowTemplateList(true)}
+                    >
+                        Шаблоны
+                    </button>
+                </div>
                 <div className="active-template-display">
                     <span>Текущий шаблон:</span>
                     {activeTemplate ? (
@@ -399,7 +623,6 @@ function PropertiesTab({ manageStatus, manageError }) {
                     ) : (
                         <span className="no-template">Не выбран</span>
                     )}
-
                     <div className="template-selector-wrapper">
                         <button
                             className="button icon-button small"
@@ -433,16 +656,122 @@ function PropertiesTab({ manageStatus, manageError }) {
                         )}
                     </div>
                 </div>
-
-                <div className="show-all-templates-section">
-                    <button
-                        className="button secondary"
-                        onClick={() => setShowTemplateList(true)}
-                    >
-                        Все шаблоны
-                    </button>
-                </div>
-
+                {activeTemplate && (
+                    <div className="inline-properties-section">
+                        {showTemplateProperties && localProperties ? (
+                            // --- ИЗМЕНЕНИЕ: Обертка для sticky-эффекта ---
+                            <div className="inline-properties-header">
+                                <div className="inline-properties-controls">
+                                    <button
+                                        className="button secondary"
+                                        onClick={() =>
+                                            setShowTemplateProperties((p) => !p)
+                                        }
+                                    >
+                                        {showTemplateProperties
+                                            ? "Скрыть свойства"
+                                            : "Показать свойства"}
+                                    </button>
+                                    <button
+                                        className="button secondary"
+                                        onClick={handleResetLocalChanges}
+                                    >
+                                        Сбросить изменения
+                                    </button>
+                                </div>
+                                <div className="search-bar-container">
+                                    <input
+                                        type="text"
+                                        placeholder="Поиск по названию..."
+                                        className="input-field search-input"
+                                        value={searchTerm}
+                                        onChange={(e) =>
+                                            setSearchTerm(e.target.value)
+                                        }
+                                    />
+                                    {searchTerm && (
+                                        <button
+                                            className="button stepper-button clear-button"
+                                            onClick={() => setSearchTerm("")}
+                                        >
+                                            C
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="inline-properties-controls">
+                                <button
+                                    className="button secondary"
+                                    onClick={() =>
+                                        setShowTemplateProperties((p) => !p)
+                                    }
+                                >
+                                    {showTemplateProperties
+                                        ? "Скрыть свойства"
+                                        : "Показать свойства"}
+                                </button>
+                            </div>
+                        )}
+                        {showTemplateProperties && localProperties && (
+                            <div className="properties-list">
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleInlinePropertiesDragEnd}
+                                >
+                                    <SortableContext
+                                        items={localProperties}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        <ul className="template-list">
+                                            {filteredInlineProperties.map(
+                                                (prop, index) => (
+                                                    <InlinePropertyItem
+                                                        key={prop.id}
+                                                        prop={prop}
+                                                        index={index}
+                                                        isEditing={
+                                                            inlineEditingPropId ===
+                                                            prop.id
+                                                        }
+                                                        editingValue={
+                                                            inlineEditingPropValue
+                                                        }
+                                                        onStartEdit={() => {
+                                                            setInlineEditingPropId(
+                                                                prop.id
+                                                            );
+                                                            setInlineEditingPropValue(
+                                                                prop.value
+                                                            );
+                                                        }}
+                                                        onCancelEdit={() =>
+                                                            setInlineEditingPropId(
+                                                                null
+                                                            )
+                                                        }
+                                                        onSaveEdit={
+                                                            handleSaveInlineProperty
+                                                        }
+                                                        onToggleIgnore={() =>
+                                                            handleToggleIgnoreProperty(
+                                                                prop.id
+                                                            )
+                                                        }
+                                                        onValueChange={
+                                                            setInlineEditingPropValue
+                                                        }
+                                                    />
+                                                )
+                                            )}
+                                        </ul>
+                                    </SortableContext>
+                                </DndContext>
+                            </div>
+                        )}
+                    </div>
+                )}
                 <div className="action-buttons-grid-2x2">
                     <button
                         className="button"
@@ -481,8 +810,16 @@ function PropertiesTab({ manageStatus, manageError }) {
                         Заменить
                     </button>
                 </div>
+                {/* --- НОВАЯ КНОПКА И ЕЕ КОНТЕЙНЕР --- */}
+                <div className="extra-actions-container">
+                    <button
+                        className="button secondary"
+                        onClick={handleDeleteEmptyProperties}
+                    >
+                        Удалить пустые свойства
+                    </button>
+                </div>
             </div>
-
             <hr />
             <div className="section">
                 <h2>Вычисление параметров</h2>

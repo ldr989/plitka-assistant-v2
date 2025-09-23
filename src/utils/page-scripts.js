@@ -5,7 +5,6 @@ export const getPropertiesFromPage = () => {
             '[id^="id_plumbing-attributevalue-content_type-object_id-"]'
         );
 
-        // Если на странице вообще нет свойств, сразу возвращаем пустой результат
         if (!anyPropertyElement) {
             return {
                 success: true,
@@ -26,7 +25,6 @@ export const getPropertiesFromPage = () => {
 
         const getScrapedValue = (element) => {
             if (!element) return "";
-            // Корректно обрабатываем SELECT и все типы INPUT
             if (element.tagName === "SELECT" || element.tagName === "INPUT") {
                 return element.value || "";
             }
@@ -178,7 +176,6 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
     };
 
     let filledCount = 0;
-    // Используем более надежный метод поиска строк, как в getPropertiesFromPage
     const propertyRows = document.querySelectorAll(
         ".grp-dynamic-form:not(.grp-empty-form)"
     );
@@ -196,11 +193,85 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
                     filledCount++;
                     await delay(100);
                 }
-                // Прерываем внутренний цикл, так как свойство уже найдено и обработано
                 break;
             }
         }
     }
 
     return { success: true, message: `Заполнено ${filledCount} свойств.` };
+};
+
+// --- ПОЛНОСТЬЮ ОБНОВЛЕННАЯ ФУНКЦИЯ ---
+export const deleteEmptyProperties = () => {
+    // 1. Найти все родительские контейнеры свойств, используя уникальную часть их ID.
+    // Это гарантирует, что мы работаем ТОЛЬКО с разделом свойств.
+    const propertyContainers = document.querySelectorAll(
+        'div.grp-dynamic-form[id^="plumbing-attributevalue-content_type-object_id"]'
+    );
+    const deleteButtonsToClick = [];
+
+    const isContainerEmpty = (container) => {
+        if (!container) return true;
+
+        const textInput = container.querySelector(
+            'input[type="text"], input[type="number"], textarea'
+        );
+        if (textInput) {
+            return textInput.value.trim() === "";
+        }
+
+        const selectInput = container.querySelector("select");
+        if (selectInput) {
+            return !selectInput.value;
+        }
+
+        const hasCheckboxes = container.querySelector('input[type="checkbox"]');
+        if (hasCheckboxes) {
+            return !container.querySelector('input[type="checkbox"]:checked');
+        }
+
+        const hasRadios = container.querySelector('input[type="radio"]');
+        if (hasRadios) {
+            return !container.querySelector('input[type="radio"]:checked');
+        }
+
+        return false;
+    };
+
+    // 2. Пройтись по каждому контейнеру свойства.
+    propertyContainers.forEach((container) => {
+        // Искать поле для значения внутри текущего контейнера.
+        const valueContainer = container.querySelector(".grp-td.value");
+
+        // 3. Проверить, пустое ли значение.
+        if (isContainerEmpty(valueContainer)) {
+            // 4. Если пустое, найти кнопку удаления СТРОГО ВНУТРИ этого же контейнера.
+            const deleteButton = container.querySelector(
+                'a.grp-icon[title="Delete Item"].grp-delete-handler, a.grp-icon[title="Delete Item"].grp-remove-handler'
+            );
+            if (deleteButton) {
+                deleteButtonsToClick.push(deleteButton);
+            }
+        }
+    });
+
+    if (deleteButtonsToClick.length === 0) {
+        return { success: true, message: "Пустых свойств не найдено." };
+    }
+
+    const initialCount = deleteButtonsToClick.length;
+
+    // 5. Нажать на все найденные кнопки.
+    function clickNext() {
+        if (deleteButtonsToClick.length === 0) return;
+        const button = deleteButtonsToClick.pop();
+        button.click();
+        setTimeout(clickNext, 100);
+    }
+
+    clickNext();
+    return {
+        success: true,
+        message: `Удалено ${initialCount} пустых свойств.`,
+    };
 };

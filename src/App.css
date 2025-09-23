@@ -202,6 +202,15 @@ hr {
     border: none;
     border-top: 1px solid #dce3f0;
 }
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.section-header h2 {
+    margin: 0;
+}
 
 /* --- Стили для Менеджера Шаблонов --- */
 .add-template-form {
@@ -250,6 +259,8 @@ hr {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex-grow: 1;
+    min-width: 0;
 }
 
 .template-name {
@@ -333,6 +344,7 @@ hr {
 }
 
 .properties-list {
+    margin-top: 12px;
     margin-bottom: 20px;
 }
 
@@ -421,6 +433,14 @@ hr {
     align-items: flex-start;
     flex-direction: column;
     gap: 10px;
+}
+.template-list li.ignored-item .prop-details {
+    text-decoration: line-through;
+    color: #888;
+}
+.template-list li.ignored-item .prop-name,
+.template-list li.ignored-item .prop-value {
+    color: #aaa;
 }
 
 /* --- Стили для полей Длина/Ширина --- */
@@ -519,6 +539,7 @@ hr {
     background-color: #eef2f9;
 }
 
+/* --- ИСПРАВЛЕНИЕ: Восстановлен стиль для action-buttons-grid --- */
 .action-buttons-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -534,6 +555,50 @@ hr {
 .action-buttons-grid .button,
 .action-buttons-grid-2x2 .button {
     width: 100%;
+}
+
+.inline-properties-section {
+    margin-bottom: 16px;
+    margin-top: -8px;
+}
+
+.inline-properties-header {
+    position: sticky;
+    top: 45px;
+    background-color: #eef2f9;
+    padding-top: 8px;
+    padding-bottom: 4px;
+    z-index: 5;
+    border-bottom: 1px solid #dce3f0;
+    margin: 0 -16px 12px -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.inline-properties-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.search-bar-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.search-input {
+    flex-grow: 1;
+    width: auto;
+}
+
+.search-bar-container .clear-button {
+    flex-shrink: 0;
+}
+
+.extra-actions-container {
+    margin-top: 8px;
 }
 
 /* --- Стили для блока с результатами поиска --- */
@@ -559,14 +624,6 @@ hr {
     color: #555;
     border-bottom: 1px solid #dce3f0;
     padding-bottom: 4px;
-}
-
-/* --- Стили для кнопки "Все шаблоны" --- */
-.show-all-templates-section {
-    display: flex;
-    justify-content: center;
-    margin-top: -8px;
-    margin-bottom: 16px;
 }
 
 /* --- Стили для хедера списка шаблонов --- */
@@ -598,4 +655,34 @@ hr {
 
 .drag-handle:active {
     cursor: grabbing;
+}
+
+/* --- Стили для DRAG & DROP и нового заголовка --- */
+
+.template-list li {
+    display: flex;
+    align-items: center;
+}
+
+.handle-wrapper {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    cursor: grab;
+    min-width: 0;
+}
+
+.handle-wrapper:active {
+    cursor: grabbing;
+}
+
+.properties-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.properties-header h3 {
+    margin: 0;
 }

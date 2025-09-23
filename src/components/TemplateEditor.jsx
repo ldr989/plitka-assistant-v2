@@ -18,140 +18,9 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { propertiesList } from "../data/propertiesList.js";
 import Icon from "./Icon.jsx";
-import useUndoableState from "../hooks/useUndoableState.js";
 import { getPropertiesFromPage } from "../utils/page-scripts.js";
-
-// --- Вспомогательные компоненты ---
-
-const PropertyValueInput = ({ propId, value, onChange }) => {
-    const prop = propertiesList[propId];
-    if (!prop) return null;
-
-    switch (prop.type) {
-        case "boolean":
-            return (
-                <div className="radio-group">
-                    <label>
-                        <input
-                            type="radio"
-                            value="true"
-                            checked={value === true}
-                            onChange={() => onChange(true)}
-                        />{" "}
-                        Да
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            value="false"
-                            checked={value === false}
-                            onChange={() => onChange(false)}
-                        />{" "}
-                        Нет
-                    </label>
-                </div>
-            );
-        case "select":
-            return (
-                <select
-                    className="select-field"
-                    value={value || ""}
-                    onChange={(e) => onChange(e.target.value)}
-                >
-                    <option value="">-- Выберите --</option>
-                    {prop.options.map((option) => (
-                        <option key={option.id} value={option.id}>
-                            {option.text}
-                        </option>
-                    ))}
-                </select>
-            );
-        case "checkbox": {
-            const currentValues = Array.isArray(value) ? value : [];
-            const handleCheckboxChange = (optionId) => {
-                const newValues = currentValues.includes(optionId)
-                    ? currentValues.filter((v) => v !== optionId)
-                    : [...currentValues, optionId];
-                onChange(newValues);
-            };
-            return (
-                <div className="checkbox-group">
-                    {prop.options.map((option) => (
-                        <label key={option.id}>
-                            <input
-                                type="checkbox"
-                                checked={currentValues.includes(option.id)}
-                                onChange={() => handleCheckboxChange(option.id)}
-                            />
-                            {option.text}
-                        </label>
-                    ))}
-                </div>
-            );
-        }
-        case "text":
-            return (
-                <input
-                    type="text"
-                    className="input-field"
-                    value={value || ""}
-                    onChange={(e) => onChange(e.target.value)}
-                />
-            );
-        case "number":
-        default:
-            return (
-                <input
-                    type="text"
-                    inputMode="decimal"
-                    className="input-field"
-                    value={value || ""}
-                    onChange={(e) => {
-                        const sanitizedValue = e.target.value.replace(
-                            /[^0-9,.]/g,
-                            ""
-                        );
-                        onChange(sanitizedValue);
-                    }}
-                />
-            );
-    }
-};
-
-const getDisplayValue = (propId, value) => {
-    const propInfo = propertiesList[propId];
-    if (
-        value === null ||
-        value === undefined ||
-        value === "" ||
-        (Array.isArray(value) && value.length === 0)
-    ) {
-        return <span className="value-empty">пусто</span>;
-    }
-    if (!propInfo) return String(value);
-    switch (propInfo.type) {
-        case "boolean":
-            return value ? "Да" : "Нет";
-        case "select":
-            return (
-                propInfo.options.find((opt) => opt.id === value)?.text ||
-                String(value)
-            );
-        case "checkbox":
-            if (Array.isArray(value)) {
-                return value
-                    .map(
-                        (val) =>
-                            propInfo.options.find((opt) => opt.id === val)
-                                ?.text || val
-                    )
-                    .join(", ");
-            }
-            return String(value);
-        default:
-            return String(value);
-    }
-};
+import { PropertyValueInput } from "./PropertyComponents.jsx";
+import { getDisplayValue } from "./property-helpers.jsx";
 
 // Компонент для одного перетаскиваемого элемента списка
 function SortablePropertyItem({
@@ -172,18 +41,21 @@ function SortablePropertyItem({
     };
 
     return (
-        <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <div className="drag-handle">
-                <span className="prop-number">{index + 1}.</span>
+        <li ref={setNodeRef} style={style} {...attributes}>
+            <div className="handle-wrapper" {...listeners}>
+                <div className="drag-handle">
+                    <span className="prop-number">{index + 1}.</span>
+                </div>
+                <div className="prop-details">
+                    <span className="prop-name">
+                        {propertiesList[prop.id]?.text}
+                    </span>
+                    <span className="prop-value">
+                        {getDisplayValue(prop.id, prop.value)}
+                    </span>
+                </div>
             </div>
-            <div className="prop-details">
-                <span className="prop-name">
-                    {propertiesList[prop.id]?.text}
-                </span>
-                <span className="prop-value">
-                    {getDisplayValue(prop.id, prop.value)}
-                </span>
-            </div>
+
             <div className="template-actions">
                 {prop.id === "4287" && (
                     <button
@@ -231,11 +103,10 @@ function TemplateEditor({
     manageError,
 }) {
     const [name, setName] = useState(template.name);
-    const [properties, setProperties, setUndoableProperties, undoProperties] =
-        useUndoableState(
-            `template-${template.id}-props`,
-            template.properties || []
-        );
+    // --- ИЗМЕНЕНИЕ: Убран useUndoableState, используется обычный useState ---
+    const [properties, setProperties] = useState(() =>
+        JSON.parse(JSON.stringify(template.properties || []))
+    );
     const [length, setLength] = useState(template.length || "");
     const [width, setWidth] = useState(template.width || "");
 
@@ -246,6 +117,8 @@ function TemplateEditor({
     const [editingPropId, setEditingPropId] = useState(null);
     const [editingPropValue, setEditingPropValue] = useState(null);
 
+    const [searchTerm, setSearchTerm] = useState("");
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -254,14 +127,9 @@ function TemplateEditor({
         })
     );
 
+    // --- ИЗМЕНЕНИЕ: Логика Undo/Ctrl+Z удалена из этого компонента ---
     useEffect(() => {
         const handleKeyDown = (event) => {
-            if (event.ctrlKey && event.code === "KeyZ") {
-                event.preventDefault();
-                if (undoProperties()) {
-                    manageStatus("Удаление свойства отменено", 1500);
-                }
-            }
             if (event.key === "Escape") {
                 event.preventDefault();
                 onBack();
@@ -269,7 +137,7 @@ function TemplateEditor({
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [undoProperties, manageStatus, onBack]);
+    }, [onBack]);
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
@@ -413,17 +281,27 @@ function TemplateEditor({
         }
         setProperties((prev) => [
             ...prev,
-            { id: selectedPropId, value: currentPropValue },
+            { id: selectedPropId, value: currentPropValue, ignored: false },
         ]);
         setIsAddingProp(false);
         setSelectedPropId("");
         setCurrentPropValue(null);
-    }, [selectedPropId, currentPropValue, setProperties]);
+    }, [selectedPropId, currentPropValue]);
 
     const handleDeleteProperty = (propId) => {
-        const newProperties = properties.filter((p) => p.id !== propId);
-        setUndoableProperties(newProperties);
-        manageStatus("Свойство удалено (Ctrl+Z для отмены)", 3000);
+        setProperties(properties.filter((p) => p.id !== propId));
+        manageStatus("Свойство удалено", 1500);
+    };
+
+    const handleClearProperties = () => {
+        if (
+            confirm(
+                "Вы уверены, что хотите удалить все свойства из этого шаблона?"
+            )
+        ) {
+            setProperties([]);
+            manageStatus("Список свойств очищен", 1500);
+        }
     };
 
     const handleEditClick = (prop) => {
@@ -444,7 +322,7 @@ function TemplateEditor({
         );
         setEditingPropId(null);
         setEditingPropValue(null);
-    }, [editingPropId, editingPropValue, setProperties]);
+    }, [editingPropId, editingPropValue]);
 
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -509,12 +387,14 @@ function TemplateEditor({
                     const result = injectionResults[0].result;
                     if (result.success) {
                         const pageProperties = result.data.properties;
-                        const knownProperties = pageProperties.filter((p) =>
-                            Object.prototype.hasOwnProperty.call(
-                                propertiesList,
-                                p.id
+                        const knownProperties = pageProperties
+                            .filter((p) =>
+                                Object.prototype.hasOwnProperty.call(
+                                    propertiesList,
+                                    p.id
+                                )
                             )
-                        );
+                            .map((p) => ({ ...p, ignored: false }));
 
                         const unknownCount =
                             pageProperties.length - knownProperties.length;
@@ -608,6 +488,12 @@ function TemplateEditor({
         manageStatus('Свойство "Форма" пересчитано.', 1500);
     };
 
+    const filteredProperties = properties.filter((prop) => {
+        const propInfo = propertiesList[prop.id];
+        if (!propInfo) return false;
+        return propInfo.text.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
     const availableProperties = Object.keys(propertiesList).filter(
         (id) => !properties.some((p) => String(p.id) === id)
     );
@@ -662,7 +548,33 @@ function TemplateEditor({
                     />
                 </div>
             </div>
-            <h3>Свойства в шаблоне:</h3>
+            <div className="properties-header">
+                <h3>Свойства в шаблоне:</h3>
+                <button
+                    className="button small secondary"
+                    onClick={handleClearProperties}
+                    disabled={properties.length === 0}
+                >
+                    Очистить список
+                </button>
+            </div>
+            <div className="search-bar-container">
+                <input
+                    type="text"
+                    placeholder="Поиск по названию..."
+                    className="input-field search-input"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                    <button
+                        className="button stepper-button clear-button"
+                        onClick={() => setSearchTerm("")}
+                    >
+                        C
+                    </button>
+                )}
+            </div>
             <div className="properties-list">
                 {properties.length > 0 ? (
                     <DndContext
@@ -675,7 +587,7 @@ function TemplateEditor({
                             strategy={verticalListSortingStrategy}
                         >
                             <ul className="template-list">
-                                {properties.map((prop, index) =>
+                                {filteredProperties.map((prop) =>
                                     editingPropId === prop.id ? (
                                         <li
                                             key={prop.id}
@@ -717,9 +629,13 @@ function TemplateEditor({
                                         <SortablePropertyItem
                                             key={prop.id}
                                             prop={prop}
-                                            index={index}
-                                            onEdit={handleEditClick}
-                                            onDelete={handleDeleteProperty}
+                                            index={properties.findIndex(
+                                                (p) => p.id === prop.id
+                                            )}
+                                            onEdit={() => handleEditClick(prop)}
+                                            onDelete={() =>
+                                                handleDeleteProperty(prop.id)
+                                            }
                                             onCalculate={
                                                 handleCalculateProperty
                                             }
