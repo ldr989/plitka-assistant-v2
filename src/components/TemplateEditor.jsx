@@ -62,15 +62,17 @@ function SortablePropertyItem({
             </div>
 
             <div className="template-actions">
+                {/* --- ИЗМЕНЕНИЯ ЗДЕСЬ (Для Формы ID 4287) --- */}
                 {prop.id === 4287 && (
                     <button
-                        className="button small icon-button"
-                        title="Пересчитать Форму"
+                        className="button small calc-button" // Изменен класс на calc-button
+                        title="Определить форму" // Изменен текст подсказки
                         onClick={onRecalculateShape}
                     >
-                        <Icon name="help" />
+                        Calc {/* Текст вместо иконки */}
                     </button>
                 )}
+
                 {CALCULABLE_PROP_IDS.includes(prop.id) && (
                     <button
                         className="button small calc-button"
@@ -591,8 +593,7 @@ function TemplateEditor({
         (id) => !properties.some((p) => String(p.id) === id)
     );
 
-    // --- ДАННЫЕ ДЛЯ МОДАЛКИ ---
-    // Фильтруем свойства, чтобы не показывать те, что уже есть во ВРЕМЕННОМ списке
+    // --- ДАННЫЕ ДЛЯ МОДАЛКИ (Без дублей, с поиском) ---
     const availableFilterOptions = Object.entries(propertiesList)
         .filter(([id, data]) => {
             if (tempIgnoredIds.includes(id)) return false;
@@ -825,7 +826,6 @@ function TemplateEditor({
 
             {/* --- МОДАЛЬНОЕ ОКНО ФИЛЬТРА --- */}
             {isFilterModalOpen && (
-                // Убрали onClick={...} с оверлея
                 <div className="modal-overlay">
                     <div
                         className="modal-content"
