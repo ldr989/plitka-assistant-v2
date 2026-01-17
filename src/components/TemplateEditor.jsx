@@ -62,14 +62,14 @@ function SortablePropertyItem({
             </div>
 
             <div className="template-actions">
-                {/* --- ИЗМЕНЕНИЯ ЗДЕСЬ (Для Формы ID 4287) --- */}
+                {/* Кнопка формы (ID 4287) - Текстовая Calc */}
                 {prop.id === 4287 && (
                     <button
-                        className="button small calc-button" // Изменен класс на calc-button
-                        title="Определить форму" // Изменен текст подсказки
+                        className="button small calc-button"
+                        title="Определить форму"
                         onClick={onRecalculateShape}
                     >
-                        Calc {/* Текст вместо иконки */}
+                        Calc
                     </button>
                 )}
 
@@ -111,7 +111,7 @@ function TemplateEditor({
 }) {
     const [name, setName] = useState(template.name);
     const [properties, setProperties] = useState(() =>
-        JSON.parse(JSON.stringify(template.properties || []))
+        JSON.parse(JSON.stringify(template.properties || [])),
     );
     const [length, setLength] = useState(template.length || "");
     const [width, setWidth] = useState(template.width || "");
@@ -128,10 +128,10 @@ function TemplateEditor({
     // --- ЛОГИКА ФИЛЬТРА (Черный список) ---
     const [ignoredImportIds, setIgnoredImportIds] = useLocalStorage(
         "ignored-import-ids",
-        []
+        [],
     );
 
-    // Временное состояние для модального окна (чтобы работала кнопка Отмена)
+    // Временное состояние для модального окна
     const [tempIgnoredIds, setTempIgnoredIds] = useState([]);
 
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -143,7 +143,7 @@ function TemplateEditor({
             activationConstraint: {
                 distance: 8,
             },
-        })
+        }),
     );
 
     // --- Блокировка скролла body при открытой модалке ---
@@ -161,7 +161,6 @@ function TemplateEditor({
     // --- ФУНКЦИИ УПРАВЛЕНИЯ МОДАЛКОЙ ---
 
     const handleOpenFilterModal = () => {
-        // Копируем текущие настройки во временное состояние
         setTempIgnoredIds([...ignoredImportIds]);
         setFilterSearch("");
         setFilterSelectId("");
@@ -169,15 +168,12 @@ function TemplateEditor({
     };
 
     const handleSaveFilter = () => {
-        // Сохраняем временное состояние в реальное
         setIgnoredImportIds(tempIgnoredIds);
         setIsFilterModalOpen(false);
-        // Добавлено уведомление о сохранении
         manageStatus("Фильтр импорта обновлен", 1500);
     };
 
     const handleCancelFilter = useCallback(() => {
-        // Просто закрываем, не сохраняя tempIgnoredIds
         setIsFilterModalOpen(false);
     }, []);
 
@@ -187,7 +183,6 @@ function TemplateEditor({
             setTempIgnoredIds((prev) => [...prev, filterSelectId]);
         }
         setFilterSelectId("");
-        // Поиск не сбрасываем, как просили
     }, [filterSelectId, tempIgnoredIds]);
 
     const handleAddDirectly = (idToAdd) => {
@@ -195,7 +190,6 @@ function TemplateEditor({
             setTempIgnoredIds((prev) => [...prev, idToAdd]);
         }
         setFilterSelectId("");
-        // Поиск не сбрасываем
     };
 
     const handleRemoveFromIgnore = (idToRemove) => {
@@ -207,8 +201,8 @@ function TemplateEditor({
     const handleUpdateProperty = useCallback(() => {
         setProperties((prev) =>
             prev.map((p) =>
-                p.id === editingPropId ? { ...p, value: editingPropValue } : p
-            )
+                p.id === editingPropId ? { ...p, value: editingPropValue } : p,
+            ),
         );
         setEditingPropId(null);
         setEditingPropValue(null);
@@ -242,7 +236,7 @@ function TemplateEditor({
         const handleKeyDown = (event) => {
             if (event.key === "Escape") {
                 if (isFilterModalOpen) {
-                    handleCancelFilter(); // Отмена/Esc закрывает без сохранения
+                    handleCancelFilter();
                     return;
                 }
                 event.preventDefault();
@@ -279,7 +273,7 @@ function TemplateEditor({
         if (over && active.id !== over.id) {
             setProperties((items) => {
                 const oldIndex = items.findIndex(
-                    (item) => item.id === active.id
+                    (item) => item.id === active.id,
                 );
                 const newIndex = items.findIndex((item) => item.id === over.id);
                 return arrayMove(items, oldIndex, newIndex);
@@ -339,7 +333,7 @@ function TemplateEditor({
                         boxesInPallet > 0
                     )
                         return truncateToTwoDecimals(
-                            palletWeight / boxesInPallet
+                            palletWeight / boxesInPallet,
                         );
                     break;
                 }
@@ -375,7 +369,7 @@ function TemplateEditor({
                     return null;
             }
         },
-        [properties, length, width]
+        [properties, length, width],
     );
 
     const handleSave = useCallback(() => {
@@ -417,7 +411,7 @@ function TemplateEditor({
     const handleClearProperties = () => {
         if (
             confirm(
-                "Вы уверены, что хотите удалить все свойства из этого шаблона?"
+                "Вы уверены, что хотите удалить все свойства из этого шаблона?",
             )
         ) {
             setProperties([]);
@@ -453,7 +447,7 @@ function TemplateEditor({
                 (injectionResults) => {
                     if (chrome.runtime.lastError) {
                         manageError(
-                            "Ошибка: " + chrome.runtime.lastError.message
+                            "Ошибка: " + chrome.runtime.lastError.message,
                         );
                         return;
                     }
@@ -469,12 +463,29 @@ function TemplateEditor({
                     if (result.success) {
                         let pageProperties = result.data.properties;
 
+                        // --- СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ФАБРИЧНОГО ЦВЕТА ---
+                        // Ищем свойство "Фабричный цвет" в propertiesList и обнуляем его значение
+                        const factoryColorEntry = Object.entries(
+                            propertiesList,
+                        ).find(
+                            ([, data]) => data.text === "Фабричный цвет", // Исправлено: удален _
+                        );
+                        if (factoryColorEntry) {
+                            const factoryColorId = Number(factoryColorEntry[0]);
+                            pageProperties = pageProperties.map((p) =>
+                                p.id === factoryColorId
+                                    ? { ...p, value: "" }
+                                    : p,
+                            );
+                        }
+                        // ------------------------------------------------
+
                         // 1. ФИЛЬТРАЦИЯ
                         const totalFound = pageProperties.length;
                         pageProperties = pageProperties.filter(
                             (p) =>
                                 !ignoredImportIds.includes(String(p.id)) &&
-                                !ignoredImportIds.includes(p.id)
+                                !ignoredImportIds.includes(p.id),
                         );
                         const filteredCount =
                             totalFound - pageProperties.length;
@@ -484,8 +495,8 @@ function TemplateEditor({
                             .filter((p) =>
                                 Object.prototype.hasOwnProperty.call(
                                     propertiesList,
-                                    p.id
-                                )
+                                    p.id,
+                                ),
                             )
                             .map((p) => ({ ...p, ignored: false }));
 
@@ -508,10 +519,10 @@ function TemplateEditor({
                             manageStatus("Данные заменены", 1500);
                         } else {
                             const existingPropIds = new Set(
-                                properties.map((p) => p.id)
+                                properties.map((p) => p.id),
                             );
                             const newProperties = knownProperties.filter(
-                                (p) => !existingPropIds.has(p.id)
+                                (p) => !existingPropIds.has(p.id),
                             );
 
                             if (newProperties.length > 0) {
@@ -521,7 +532,7 @@ function TemplateEditor({
                                 ]);
                                 manageStatus(
                                     `Добавлено ${newProperties.length}`,
-                                    1500
+                                    1500,
                                 );
                             } else {
                                 manageStatus("Новых свойств не найдено", 1500);
@@ -530,7 +541,7 @@ function TemplateEditor({
                     } else {
                         manageError(result.message || "Ошибка скрипта.");
                     }
-                }
+                },
             );
         });
     };
@@ -542,7 +553,7 @@ function TemplateEditor({
             const calculatedValue = calculatePropertyValue(Number(newPropId));
             setCurrentPropValue(calculatedValue);
         },
-        [calculatePropertyValue]
+        [calculatePropertyValue],
     );
 
     const handleCalculateProperty = (propId) => {
@@ -550,8 +561,8 @@ function TemplateEditor({
         if (calculatedValue !== null && calculatedValue !== "") {
             setProperties((prev) =>
                 prev.map((p) =>
-                    p.id === propId ? { ...p, value: calculatedValue } : p
-                )
+                    p.id === propId ? { ...p, value: calculatedValue } : p,
+                ),
             );
             manageStatus("Свойство вычислено.", 1500);
         } else {
@@ -571,7 +582,7 @@ function TemplateEditor({
         const shapeValue = l === w ? "6361" : "6360";
         setProperties((prev) =>
             // ID 4287 - "Форма"
-            prev.map((p) => (p.id === 4287 ? { ...p, value: shapeValue } : p))
+            prev.map((p) => (p.id === 4287 ? { ...p, value: shapeValue } : p)),
         );
         manageStatus("Форма пересчитана.", 1500);
     };
@@ -579,7 +590,7 @@ function TemplateEditor({
     // eslint-disable-next-line no-unused-vars
     const runInternalCalculation = (propId) => {
         alert(
-            "В этом режиме калькулятор пока недоступен. Используйте вкладку 'Свойства' -> 'Вычисление параметров'."
+            "В этом режиме калькулятор пока недоступен. Используйте вкладку 'Свойства' -> 'Вычисление параметров'.",
         );
     };
 
@@ -590,7 +601,7 @@ function TemplateEditor({
     });
 
     const availableProperties = Object.keys(propertiesList).filter(
-        (id) => !properties.some((p) => String(p.id) === id)
+        (id) => !properties.some((p) => String(p.id) === id),
     );
 
     // --- ДАННЫЕ ДЛЯ МОДАЛКИ (Без дублей, с поиском) ---
@@ -728,7 +739,7 @@ function TemplateEditor({
                                             key={prop.id}
                                             prop={prop}
                                             index={properties.findIndex(
-                                                (p) => p.id === prop.id
+                                                (p) => p.id === prop.id,
                                             )}
                                             onEdit={() => handleEditClick(prop)}
                                             onDelete={() =>
@@ -741,7 +752,7 @@ function TemplateEditor({
                                                 handleRecalculateShape
                                             }
                                         />
-                                    )
+                                    ),
                                 )}
                             </ul>
                         </SortableContext>
@@ -853,11 +864,7 @@ function TemplateEditor({
                                     availableFilterOptions.map((opt) => (
                                         <div
                                             key={opt.id}
-                                            className={`filter-item ${
-                                                filterSelectId === opt.id
-                                                    ? "selected"
-                                                    : ""
-                                            }`}
+                                            className={`filter-item ${filterSelectId === opt.id ? "selected" : ""}`}
                                             onClick={() =>
                                                 setFilterSelectId(opt.id)
                                             }

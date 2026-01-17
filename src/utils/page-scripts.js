@@ -2,7 +2,7 @@ export const getPropertiesFromPage = () => {
     try {
         const props = [];
         const anyPropertyElement = document.querySelector(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"]'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]',
         );
 
         if (!anyPropertyElement) {
@@ -29,7 +29,7 @@ export const getPropertiesFromPage = () => {
                 return element.value || "";
             }
             const checkedRadios = element.querySelectorAll(
-                'input[type="radio"]:checked'
+                'input[type="radio"]:checked',
             );
             if (checkedRadios.length > 0) {
                 const val = checkedRadios[0].value;
@@ -38,7 +38,7 @@ export const getPropertiesFromPage = () => {
                 return val;
             }
             const checkedCheckboxes = element.querySelectorAll(
-                'input[type="checkbox"]:checked'
+                'input[type="checkbox"]:checked',
             );
             if (checkedCheckboxes.length > 0) {
                 return Array.from(checkedCheckboxes).map((cb) => cb.value);
@@ -50,7 +50,7 @@ export const getPropertiesFromPage = () => {
         };
 
         const propertyRows = document.querySelectorAll(
-            ".grp-dynamic-form:not(.grp-empty-form)"
+            ".grp-dynamic-form:not(.grp-empty-form)",
         );
 
         propertyRows.forEach((row) => {
@@ -107,14 +107,14 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
         if (propsToAdd.length === 0) {
             window.postMessage(
                 { type: "EXTENSION_PROPS_ADDED", status: "success" },
-                "*"
+                "*",
             );
             return;
         }
 
         const propIdToAdd = propsToAdd.shift();
         const currentFormCount = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         ).length;
         addButton.dispatchEvent(clickEvent);
 
@@ -149,19 +149,19 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
         if (radioInputs.length > 0) {
             const targetValue = value ? "true" : "false";
             const radioToSelect = Array.from(radioInputs).find(
-                (r) => r.value.toLowerCase() === targetValue
+                (r) => r.value.toLowerCase() === targetValue,
             );
             if (radioToSelect) {
                 radioToSelect.checked = true;
                 radioToSelect.dispatchEvent(
-                    new Event("change", { bubbles: true })
+                    new Event("change", { bubbles: true }),
                 );
             }
             return;
         }
         if (Array.isArray(value)) {
             const checkboxInputs = element.querySelectorAll(
-                'input[type="checkbox"]'
+                'input[type="checkbox"]',
             );
             checkboxInputs.forEach((cb) => {
                 const shouldBeChecked = value.includes(cb.value);
@@ -180,7 +180,7 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
 
     let filledCount = 0;
     const propertyRows = document.querySelectorAll(
-        ".grp-dynamic-form:not(.grp-empty-form)"
+        ".grp-dynamic-form:not(.grp-empty-form)",
     );
 
     for (const propFromTemplate of propsToFill) {
@@ -218,7 +218,7 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
 
 export const deleteEmptyProperties = () => {
     const propertyContainers = document.querySelectorAll(
-        'div.grp-dynamic-form[id^="plumbing-attributevalue-content_type-object_id"]'
+        'div.grp-dynamic-form[id^="plumbing-attributevalue-content_type-object_id"]',
     );
     const deleteButtonsToClick = [];
 
@@ -226,7 +226,7 @@ export const deleteEmptyProperties = () => {
         if (!container) return true;
 
         const textInput = container.querySelector(
-            'input[type="text"], input[type="number"], textarea'
+            'input[type="text"], input[type="number"], textarea',
         );
         if (textInput) {
             return textInput.value.trim() === "";
@@ -255,7 +255,7 @@ export const deleteEmptyProperties = () => {
 
         if (isContainerEmpty(valueContainer)) {
             const deleteButton = container.querySelector(
-                'a.grp-icon[title="Delete Item"].grp-delete-handler, a.grp-icon[title="Delete Item"].grp-remove-handler'
+                'a.grp-icon[title="Delete Item"].grp-delete-handler, a.grp-icon[title="Delete Item"].grp-remove-handler',
             );
             if (deleteButton) {
                 deleteButtonsToClick.push(deleteButton);
