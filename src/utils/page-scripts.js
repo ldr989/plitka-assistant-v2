@@ -118,6 +118,7 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
         ).length;
         addButton.dispatchEvent(clickEvent);
 
+        // --- УСКОРЕНИЕ: Уменьшено ожидание появления строки с 75 до 30 мс ---
         setTimeout(() => {
             const newSelectId = `id_plumbing-attributevalue-content_type-object_id-${currentFormCount}-attribute`;
             const newSelect = document.getElementById(newSelectId);
@@ -127,10 +128,11 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
                 newSelect.dispatchEvent(new Event("change", { bubbles: true }));
             }
 
-            window.scrollTo(0, document.body.scrollHeight * 0.97);
+            window.scrollTo(0, document.body.scrollHeight * 0.98);
 
-            setTimeout(addNextForm, 100);
-        }, 75);
+            // --- УСКОРЕНИЕ: Уменьшена пауза перед следующей формой с 100 до 20 мс ---
+            setTimeout(addNextForm, 20);
+        }, 30);
     }
 
     addNextForm();
@@ -138,6 +140,7 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
 };
 
 export const fillPropertyFormsOnPage = async (propsToFill) => {
+    // --- УСКОРЕНИЕ: Уменьшена задержка заполнения с 100 до 20 мс ---
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     const setElementValue = (element, value) => {
@@ -191,7 +194,8 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
                 if (valueElement) {
                     setElementValue(valueElement, propFromTemplate.value);
                     filledCount++;
-                    await delay(100);
+                    // --- УСКОРЕНИЕ: используем уменьшенную задержку 20мс ---
+                    await delay(20);
                 }
                 break;
             }
@@ -201,10 +205,7 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
     return { success: true, message: `Заполнено ${filledCount} свойств.` };
 };
 
-// --- ПОЛНОСТЬЮ ОБНОВЛЕННАЯ ФУНКЦИЯ ---
 export const deleteEmptyProperties = () => {
-    // 1. Найти все родительские контейнеры свойств, используя уникальную часть их ID.
-    // Это гарантирует, что мы работаем ТОЛЬКО с разделом свойств.
     const propertyContainers = document.querySelectorAll(
         'div.grp-dynamic-form[id^="plumbing-attributevalue-content_type-object_id"]'
     );
@@ -238,14 +239,10 @@ export const deleteEmptyProperties = () => {
         return false;
     };
 
-    // 2. Пройтись по каждому контейнеру свойства.
     propertyContainers.forEach((container) => {
-        // Искать поле для значения внутри текущего контейнера.
         const valueContainer = container.querySelector(".grp-td.value");
 
-        // 3. Проверить, пустое ли значение.
         if (isContainerEmpty(valueContainer)) {
-            // 4. Если пустое, найти кнопку удаления СТРОГО ВНУТРИ этого же контейнера.
             const deleteButton = container.querySelector(
                 'a.grp-icon[title="Delete Item"].grp-delete-handler, a.grp-icon[title="Delete Item"].grp-remove-handler'
             );
@@ -261,12 +258,12 @@ export const deleteEmptyProperties = () => {
 
     const initialCount = deleteButtonsToClick.length;
 
-    // 5. Нажать на все найденные кнопки.
     function clickNext() {
         if (deleteButtonsToClick.length === 0) return;
         const button = deleteButtonsToClick.pop();
         button.click();
-        setTimeout(clickNext, 100);
+        // --- УСКОРЕНИЕ: Уменьшена задержка удаления с 100 до 30 мс ---
+        setTimeout(clickNext, 30);
     }
 
     clickNext();

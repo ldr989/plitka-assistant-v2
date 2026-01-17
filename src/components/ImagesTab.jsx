@@ -39,15 +39,17 @@ function ImagesTab({ manageStatus, manageError }) {
             cancelable: true,
         });
         let clicksRemaining = count;
-        const clickInterval = 150;
+        // --- УСКОРЕНИЕ: Интервал снижен с 150 до 40 ---
+        const clickInterval = 40;
+
         function clickWithDelay() {
             if (clicksRemaining <= 0) return;
             addButton.dispatchEvent(clickEvent);
 
-            // --- ИЗМЕНЕНИЕ ЗДЕСЬ: Добавляем скролл ---
+            // --- УСКОРЕНИЕ: Скролл чуть быстрее, но реже (опционально, оставим небольшую задержку) ---
             setTimeout(() => {
-                window.scrollTo(0, document.body.scrollHeight * 0.97);
-            }, 50);
+                window.scrollTo(0, document.body.scrollHeight * 0.98);
+            }, 20);
 
             clicksRemaining--;
             setTimeout(clickWithDelay, clickInterval);
@@ -63,8 +65,9 @@ function ImagesTab({ manageStatus, manageError }) {
             return;
         }
 
-        const clickInterval = 150;
-        const estimatedTime = 500 + num * clickInterval;
+        // --- УСКОРЕНИЕ: Обновлен расчет времени для статус-бара ---
+        const clickInterval = 40;
+        const estimatedTime = 300 + num * clickInterval;
         manageStatus(`Создаю ${num} форм...`, estimatedTime);
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -103,7 +106,12 @@ function ImagesTab({ manageStatus, manageError }) {
         const allSelectsOnPage = document.querySelectorAll("select");
         let found = false;
         allSelectsOnPage.forEach((select) => {
-            if (select.name.startsWith("plumbing-image")) {
+            // --- ИСПРАВЛЕНИЕ: Добавлена проверка, что имя заканчивается на -itype ---
+            // Это исключает поле interior_type, которое тоже начинается с plumbing-image
+            if (
+                select.name.startsWith("plumbing-image") &&
+                select.name.endsWith("-itype")
+            ) {
                 found = true;
                 if (select.value !== targetValue) {
                     select.value = targetValue;

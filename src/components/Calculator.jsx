@@ -89,37 +89,31 @@ function Calculator({ manageStatus, manageError }) {
                 </button>
             </div>
 
-            <h4 style={{ marginTop: "16px" }}>Паллета:</h4>
+            <h4 style={{ marginTop: "16px" }}>Палета:</h4>
             <div className="action-buttons-grid">
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(
-                            calcs.calculateBoxesInPallet,
-                            "Кор/палл"
-                        )
+                        handleCalculate(calcs.calculateBoxesInPallet, "Кор/пал")
                     }
                 >
-                    Кор/палл
+                    Кор/пал
                 </button>
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(calcs.calculateM2InPallet, "М2/палл")
+                        handleCalculate(calcs.calculateM2InPallet, "М2/пал")
                     }
                 >
-                    М2/палл
+                    М2/пал
                 </button>
                 <button
                     className="button"
                     onClick={() =>
-                        handleCalculate(
-                            calcs.calculateWeightOfPallet,
-                            "Кг/палл"
-                        )
+                        handleCalculate(calcs.calculateWeightOfPallet, "Кг/пал")
                     }
                 >
-                    Кг/палл
+                    Кг/пал
                 </button>
             </div>
         </div>
