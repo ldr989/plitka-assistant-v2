@@ -184,6 +184,17 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
     );
 
     for (const propFromTemplate of propsToFill) {
+        // --- ВАЖНОЕ ИЗМЕНЕНИЕ: Пропускаем пустые значения ---
+        // Если value пустое, null или undefined — переходим к следующему свойству,
+        // не меняя ничего на странице.
+        if (
+            propFromTemplate.value === null ||
+            propFromTemplate.value === undefined ||
+            String(propFromTemplate.value).trim() === ""
+        ) {
+            continue;
+        }
+
         for (const row of propertyRows) {
             const propSelect = row.querySelector('[id$="-attribute"]');
             if (
