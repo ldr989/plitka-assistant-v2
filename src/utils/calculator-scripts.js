@@ -1,15 +1,19 @@
 // ВНИМАНИЕ: Все функции самодостаточны.
-// Хелперы и логика округления дублируются внутри каждой функции,
+// Хелперы дублируются внутри каждой функции,
 // чтобы executeScript гарантированно работал без внешних зависимостей.
+
+// --- ХЕЛПЕР ЗАПИСИ ЗНАЧЕНИЯ ---
+// Используем щадящую точность (до 5 знаков), чтобы убрать мусор типа 0.3000000004,
+// но НЕ округлять реальные данные (0.0009 не превратится в 0.001).
 
 // 1. Площадь плитки (Длина * Ширина / 10000)
 export const calculateTileArea = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
 
         const getProp = (id) => {
@@ -28,10 +32,10 @@ export const calculateTileArea = () => {
 
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            // ЛОГИКА ОКРУГЛЕНИЯ: 3 значащие цифры
-            const rounded =
-                val === 0 ? 0 : parseFloat(Number(val).toPrecision(3));
-            el.value = rounded;
+            // УБРАЛИ ОКРУГЛЕНИЕ. Оставляем до 5 знаков, чтобы не терять точность площади (0.0009)
+            // и убрать программный мусор.
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -43,9 +47,7 @@ export const calculateTileArea = () => {
             const length = getValue(lengthEl); // см
             const width = getValue(widthEl); // см
 
-            // ИСПРАВЛЕНИЕ: Делим на 10000, чтобы перевести см² в м²
-            // 3 * 3 = 9 см² -> 0.0009 м²
-            // 60 * 120 = 7200 см² -> 0.72 м²
+            // Важно: площадь маленькой плитки может быть 0.0009, округлять нельзя
             const area = (length * width) / 10000;
 
             if (area > 0) {
@@ -61,10 +63,10 @@ export const calculateTileArea = () => {
 export const calculateWeightOfTile = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -80,9 +82,8 @@ export const calculateWeightOfTile = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const rounded =
-                val === 0 ? 0 : parseFloat(Number(val).toPrecision(3));
-            el.value = rounded;
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -96,7 +97,7 @@ export const calculateWeightOfTile = () => {
 
         const area = getValue(areaEl);
 
-        // А: Через вес м2
+        // А: Через вес м2 (Самый точный)
         if (getValue(weightM2El) > 0 && area > 0) {
             const weight = getValue(weightM2El) * area;
             setValue(weightTileEl, weight);
@@ -119,10 +120,10 @@ export const calculateWeightOfTile = () => {
 export const calculateWeightOfM2 = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -138,9 +139,8 @@ export const calculateWeightOfM2 = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const rounded =
-                val === 0 ? 0 : parseFloat(Number(val).toPrecision(3));
-            el.value = rounded;
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -176,10 +176,10 @@ export const calculateWeightOfM2 = () => {
 export const calculateTilesInBox = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -195,8 +195,9 @@ export const calculateTilesInBox = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            // Для количества штук оставляем целое число
-            el.value = Math.round(val);
+            // УБРАЛИ Math.round. Теперь показывает точное дробное, если получится.
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -221,10 +222,10 @@ export const calculateTilesInBox = () => {
 export const calculateM2InBox = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -240,9 +241,8 @@ export const calculateM2InBox = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const rounded =
-                val === 0 ? 0 : parseFloat(Number(val).toPrecision(3));
-            el.value = rounded;
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -267,10 +267,10 @@ export const calculateM2InBox = () => {
 export const calculateWeightOfBox = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -286,21 +286,34 @@ export const calculateWeightOfBox = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const rounded =
-                val === 0 ? 0 : parseFloat(Number(val).toPrecision(3));
-            el.value = rounded;
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
-        const qtyEl = getProp(4288);
-        const weightTileEl = getProp(4354);
-        const m2InBoxEl = getProp(4289);
-        const weightM2El = getProp(4355);
+        const qtyEl = getProp(4288); // Штук в упаковке
+        const weightTileEl = getProp(4354); // Вес 1 шт
+        const m2InBoxEl = getProp(4289); // М2 в упаковке
+        const weightM2El = getProp(4355); // Вес м2
         const weightBoxEl = getProp(4357); // Цель
+
+        // Новые поля для расчета "через палету"
+        const boxesEl = getProp(4947); // Коробок в палете
+        const weightPalletEl = getProp(5277); // Вес палеты
 
         if (!weightBoxEl) return;
 
-        // А: Штуки * Вес одной
+        // ИЗМЕНЕННЫЙ ПОРЯДОК ПРИОРИТЕТОВ:
+
+        // 1. Приоритет (Самый частый): М2 в коробке * Вес м2
+        const m2Box = getValue(m2InBoxEl);
+        const wM2 = getValue(weightM2El);
+        if (m2Box > 0 && wM2 > 0) {
+            setValue(weightBoxEl, m2Box * wM2);
+            return;
+        }
+
+        // 2. Приоритет: Штуки * Вес одной
         const qty = getValue(qtyEl);
         const wTile = getValue(weightTileEl);
         if (qty > 0 && wTile > 0) {
@@ -308,11 +321,12 @@ export const calculateWeightOfBox = () => {
             return;
         }
 
-        // Б: М2 в коробке * Вес м2
-        const m2Box = getValue(m2InBoxEl);
-        const wM2 = getValue(weightM2El);
-        if (m2Box > 0 && wM2 > 0) {
-            setValue(weightBoxEl, m2Box * wM2);
+        // 3. Приоритет (Новый): Вес палеты / Коробок в палете
+        const wPallet = getValue(weightPalletEl);
+        const boxes = getValue(boxesEl);
+        if (wPallet > 0 && boxes > 0) {
+            setValue(weightBoxEl, wPallet / boxes);
+            return;
         }
     } catch (e) {
         console.error("Calculator Error (Weight Box):", e);
@@ -323,10 +337,10 @@ export const calculateWeightOfBox = () => {
 export const calculateBoxesInPallet = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -342,8 +356,8 @@ export const calculateBoxesInPallet = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            // Для коробок тоже используем целое число
-            el.value = Math.round(val);
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -368,10 +382,10 @@ export const calculateBoxesInPallet = () => {
 export const calculateM2InPallet = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -387,9 +401,8 @@ export const calculateM2InPallet = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const rounded =
-                val === 0 ? 0 : parseFloat(Number(val).toPrecision(3));
-            el.value = rounded;
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -414,10 +427,10 @@ export const calculateM2InPallet = () => {
 export const calculateWeightOfPallet = () => {
     try {
         const allPropSelects = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id*="__prefix__"])',
         );
         const allValueElements = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])'
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id*="__prefix__"])',
         );
         const getProp = (id) => {
             let element = null;
@@ -433,9 +446,8 @@ export const calculateWeightOfPallet = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const rounded =
-                val === 0 ? 0 : parseFloat(Number(val).toPrecision(3));
-            el.value = rounded;
+            const cleanVal = parseFloat(Number(val).toFixed(5));
+            el.value = cleanVal;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
