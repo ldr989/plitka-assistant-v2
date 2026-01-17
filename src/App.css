@@ -3,9 +3,10 @@ body,
 html {
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-        "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-        "Helvetica Neue", sans-serif;
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+        sans-serif;
 }
 
 /* Главный контейнер приложения */
@@ -150,6 +151,7 @@ html {
     display: flex;
     align-items: center;
     gap: 12px;
+    z-index: 20; /* Повысили z-index, чтобы не перекрывался контентом */
 }
 
 .status-bar p {
@@ -243,16 +245,17 @@ hr {
     margin: 0;
 }
 
+/* --- Обновленные стили списка для Drag & Drop --- */
 .template-list li {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    align-items: center; /* Выравнивание по центру по вертикали */
     padding: 10px;
     background-color: #fff;
     border: 1px solid #dce3f0;
     border-radius: 6px;
     margin-bottom: 8px;
     min-height: 38px;
+    touch-action: none; /* Важно для dnd-kit на мобильных/планшетах */
 }
 
 .template-info {
@@ -276,7 +279,19 @@ hr {
 .template-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: flex-end; /* Кнопки прижаты вправо */
+    gap: 6px;
+    margin-top: 4px;
+    padding-top: 8px;
+    /* Если это внутри карточки свойства, добавляем разделитель сверху (опционально) */
+    /* border-top: 1px solid #f3f4f6; */
+}
+
+/* Фикс для списка шаблонов (там нет border-top) */
+.template-list-container .template-actions {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
 }
 
 .button.small {
@@ -295,16 +310,7 @@ hr {
     border-radius: 50%;
 }
 
-.button.icon-button svg {
-    width: 16px;
-    height: 16px;
-    stroke: #333;
-}
-
-.button.icon-button:hover {
-    background-color: #e4e6eb;
-}
-
+/* Особый стиль для кнопки удаления (корзина) */
 .button.icon-button.danger {
     background-color: transparent;
     border-color: transparent;
@@ -316,6 +322,16 @@ hr {
 
 .button.icon-button.danger svg {
     stroke: #e53e3e;
+}
+
+.button.icon-button svg {
+    width: 16px;
+    height: 16px;
+    stroke: #333;
+}
+
+.button.icon-button:hover {
+    background-color: #e4e6eb;
 }
 
 /* --- Стили для Редактора Шаблонов --- */
@@ -471,17 +487,55 @@ hr {
     width: 100px;
 }
 
-/* --- Стили для кнопки "Calc" --- */
+/* --- НОВЫЕ СТИЛИ ДЛЯ КНОПОК CALC И CLEAR --- */
+.calc-button,
+.clear-button {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    min-width: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    line-height: 1;
+    border-radius: 4px;
+    border: 1px solid transparent; /* Базовая граница */
+    cursor: pointer;
+}
+
+/* Стиль кнопки Calc */
+.calc-button {
+    background-color: #e6f7ff;
+    border-color: #91d5ff;
+    color: #096dd9;
+}
+
+.calc-button:hover {
+    background-color: #bae7ff;
+    border-color: #69c0ff;
+}
+
+/* Стиль кнопки Clear (нейтральный, но текст чуть темнее) */
+.clear-button {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+    color: #4b5563;
+}
+
+.clear-button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+/* Чтобы перебить старый селектор .button.calc-button, если он где-то остался */
 .button.calc-button {
     background-color: #e6f7ff;
     border-color: #91d5ff;
     color: #096dd9;
-    font-weight: bold;
-}
-
-.button.calc-button:hover {
-    background-color: #bae7ff;
-    border-color: #69c0ff;
 }
 
 /* --- Стили для раздела "Свойства плитки" --- */
@@ -539,7 +593,7 @@ hr {
     background-color: #eef2f9;
 }
 
-/* --- ИСПРАВЛЕНИЕ: Восстановлен стиль для action-buttons-grid --- */
+/* --- Сетки кнопок --- */
 .action-buttons-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -594,7 +648,10 @@ hr {
 }
 
 .search-bar-container .clear-button {
+    /* Это кнопка "C" в поиске, не путать с Clear Value */
     flex-shrink: 0;
+    min-width: 30px;
+    color: #e53e3e;
 }
 
 .extra-actions-container {
@@ -638,7 +695,7 @@ hr {
     margin: 0;
 }
 
-/* --- Стили для Drag & Drop --- */
+/* --- Стили для Drag & Drop элементов --- */
 .prop-number {
     font-size: 14px;
     color: #888;
@@ -657,13 +714,6 @@ hr {
     cursor: grabbing;
 }
 
-/* --- Стили для DRAG & DROP и нового заголовка --- */
-
-.template-list li {
-    display: flex;
-    align-items: center;
-}
-
 .handle-wrapper {
     display: flex;
     align-items: center;
@@ -676,22 +726,7 @@ hr {
     cursor: grabbing;
 }
 
-.properties-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.properties-header h3 {
-    margin: 0;
-}
-
-/* ========================================================== */
-/* НОВЫЕ СТИЛИ ДЛЯ МОДАЛКИ И ФИЛЬТРА (ДОБАВЛЕНЫ В КОНЕЦ)     */
-/* ========================================================== */
-
-/* 1. Группировка кнопок импорта */
+/* --- Группировка кнопок импорта --- */
 .import-actions-row {
     display: flex;
     gap: 8px;
@@ -699,7 +734,7 @@ hr {
 }
 
 .import-actions-row .button {
-    flex: 1; /* Кнопки Импорта растягиваются равномерно */
+    flex: 1;
 }
 
 /* Кнопка "Фильтр" (шестеренка) */
@@ -710,7 +745,10 @@ hr {
     border-radius: 6px;
 }
 
-/* 2. МОДАЛЬНОЕ ОКНО */
+/* ========================================================== */
+/* МОДАЛЬНОЕ ОКНО И ФИЛЬТР                                  */
+/* ========================================================== */
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -734,13 +772,10 @@ hr {
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    /* box-sizing: border-box нужен здесь, чтобы паддинги не ломали размер */
     box-sizing: border-box;
     overflow: hidden;
 }
 
-/* Принудительно устанавливаем box-sizing для всех элементов ВНУТРИ модалки, 
-   чтобы они вели себя предсказуемо и не ломали верстку инпутов */
 .modal-content * {
     box-sizing: border-box;
 }
@@ -763,12 +798,11 @@ hr {
 .filter-controls {
     display: flex;
     flex-direction: column;
-    gap: 0; /* Инпут прилипает к списку */
+    gap: 0;
     margin-bottom: 12px;
     flex-shrink: 0;
 }
 
-/* Инпут поиска в модалке - растягиваем на 100% */
 .filter-controls .input-field {
     width: 100%;
     margin-bottom: 0;
@@ -777,7 +811,6 @@ hr {
     padding: 8px 12px;
 }
 
-/* Список результатов (Listbox) */
 .filter-list-container {
     height: 100px;
     overflow-y: auto;
@@ -809,13 +842,11 @@ hr {
     color: #fff;
 }
 
-/* Кнопка "Добавить" */
 .add-btn {
     margin-top: 8px;
     margin-bottom: 8px;
 }
 
-/* Список тегов (Центральная скроллируемая часть) */
 .tags-container {
     flex: 1;
     overflow-y: auto;
@@ -866,7 +897,6 @@ hr {
     margin-top: 10px;
 }
 
-/* Футер модалки (Кнопки) */
 .modal-actions {
     display: flex;
     justify-content: space-between;

@@ -34,6 +34,7 @@ function SortablePropertyItem({
     prop,
     index,
     onEdit,
+    onClearValue,
     onDelete,
     onCalculate,
     onRecalculateShape,
@@ -83,6 +84,16 @@ function SortablePropertyItem({
                         Calc
                     </button>
                 )}
+
+                {/* Кнопка очистки (теперь текстовая, как Calc) */}
+                <button
+                    className="button small clear-button"
+                    title="Очистить значение"
+                    onClick={() => onClearValue(prop.id)}
+                >
+                    Clear
+                </button>
+
                 <button
                     className="button small icon-button"
                     title="Редактировать свойство"
@@ -301,6 +312,14 @@ function TemplateEditor({
                 return arrayMove(items, oldIndex, newIndex);
             });
         }
+    };
+
+    // --- ОБРАБОТЧИК ОЧИСТКИ ЗНАЧЕНИЯ ---
+    const handleClearPropertyValue = (propId) => {
+        setProperties((prev) =>
+            prev.map((p) => (p.id === propId ? { ...p, value: "" } : p)),
+        );
+        manageStatus("Значение очищено", 1000);
     };
 
     const calculatePropertyValue = useCallback(
@@ -757,6 +776,9 @@ function TemplateEditor({
                                                 (p) => p.id === prop.id,
                                             )}
                                             onEdit={() => handleEditClick(prop)}
+                                            onClearValue={
+                                                handleClearPropertyValue
+                                            }
                                             onDelete={() =>
                                                 handleDeleteProperty(prop.id)
                                             }
