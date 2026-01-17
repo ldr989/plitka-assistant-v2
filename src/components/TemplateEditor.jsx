@@ -22,6 +22,7 @@ import { getPropertiesFromPage } from "../utils/page-scripts.js";
 import { PropertyValueInput } from "./PropertyComponents.jsx";
 import { getDisplayValue } from "./property-helpers.jsx";
 import useLocalStorage from "../hooks/useLocalStorage.js";
+import useUndoableState from "../hooks/useUndoableState.js"; // Импортируем хук Undo
 
 // --- КОНСТАНТЫ ---
 const CALCULABLE_PROP_IDS = [
@@ -110,9 +111,14 @@ function TemplateEditor({
     manageError,
 }) {
     const [name, setName] = useState(template.name);
-    const [properties, setProperties] = useState(() =>
-        JSON.parse(JSON.stringify(template.properties || [])),
-    );
+
+    // Заменяем обычный useState на useUndoableState
+    // Используем уникальный ключ для localStorage, чтобы шаблоны не путались
+    const [properties, setProperties, setUndoableProperties, undoProperties] =
+        useUndoableState(`editor-props-${template.id}`, () =>
+            JSON.parse(JSON.stringify(template.properties || [])),
+        );
+
     const [length, setLength] = useState(template.length || "");
     const [width, setWidth] = useState(template.width || "");
 
@@ -206,7 +212,7 @@ function TemplateEditor({
         );
         setEditingPropId(null);
         setEditingPropValue(null);
-    }, [editingPropId, editingPropValue]);
+    }, [editingPropId, editingPropValue, setProperties]);
 
     const handleAddProperty = useCallback(() => {
         if (!selectedPropId) {
@@ -224,7 +230,7 @@ function TemplateEditor({
         setIsAddingProp(false);
         setSelectedPropId("");
         setCurrentPropValue(null);
-    }, [selectedPropId, currentPropValue]);
+    }, [selectedPropId, currentPropValue, setProperties]);
 
     const handleCancelEdit = useCallback(() => {
         setEditingPropId(null);
@@ -234,6 +240,20 @@ function TemplateEditor({
     // --- ГЛОБАЛЬНЫЙ ОБРАБОТЧИК КЛАВИШ ---
     useEffect(() => {
         const handleKeyDown = (event) => {
+            // Обработка Ctrl+Z
+            if (
+                event.ctrlKey &&
+                event.code === "KeyZ" &&
+                !isFilterModalOpen &&
+                !editingPropId
+            ) {
+                event.preventDefault();
+                if (undoProperties()) {
+                    manageStatus("Действие отменено", 1500);
+                }
+                return;
+            }
+
             if (event.key === "Escape") {
                 if (isFilterModalOpen) {
                     handleCancelFilter();
@@ -266,6 +286,8 @@ function TemplateEditor({
         handleCancelEdit,
         handleAddToIgnore,
         handleCancelFilter,
+        undoProperties,
+        manageStatus,
     ]);
 
     const handleDragEnd = (event) => {
@@ -404,19 +426,17 @@ function TemplateEditor({
     }, [name, properties, length, width, template, onUpdate, onBack]);
 
     const handleDeleteProperty = (propId) => {
-        setProperties(properties.filter((p) => p.id !== propId));
-        manageStatus("Свойство удалено", 1500);
+        // Используем setUndoableProperties для возможности отмены
+        const newProperties = properties.filter((p) => p.id !== propId);
+        setUndoableProperties(newProperties);
+        manageStatus("Свойство удалено (Ctrl+Z)", 2000);
     };
 
     const handleClearProperties = () => {
-        if (
-            confirm(
-                "Вы уверены, что хотите удалить все свойства из этого шаблона?",
-            )
-        ) {
-            setProperties([]);
-            manageStatus("Список свойств очищен", 1500);
-        }
+        // Убрали confirm, добавили Undo
+        if (properties.length === 0) return;
+        setUndoableProperties([]);
+        manageStatus("Список очищен (Ctrl+Z)", 2000);
     };
 
     const handleEditClick = (prop) => {
@@ -426,11 +446,8 @@ function TemplateEditor({
 
     // --- ФУНКЦИЯ ИМПОРТА ---
     const handleImport = (mode) => {
-        const confirmationMessage =
-            mode === "replace"
-                ? "Это действие заменит все текущие данные в шаблоне данными со страницы (с учетом фильтра). Продолжить?"
-                : "Это действие добавит недостающие свойства со страницы в ваш шаблон (с учетом фильтра). Продолжить?";
-        if (!confirm(confirmationMessage)) return;
+        // Убрали confirm, добавили Undo через setUndoableProperties
+        // Но сперва нужно получить данные, поэтому Undo сработает в колбэке
 
         manageStatus("Импортирую данные со страницы...", 2000);
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -464,12 +481,9 @@ function TemplateEditor({
                         let pageProperties = result.data.properties;
 
                         // --- СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ФАБРИЧНОГО ЦВЕТА ---
-                        // Ищем свойство "Фабричный цвет" в propertiesList и обнуляем его значение
                         const factoryColorEntry = Object.entries(
                             propertiesList,
-                        ).find(
-                            ([, data]) => data.text === "Фабричный цвет", // Исправлено: удален _
-                        );
+                        ).find(([, data]) => data.text === "Фабричный цвет");
                         if (factoryColorEntry) {
                             const factoryColorId = Number(factoryColorEntry[0]);
                             pageProperties = pageProperties.map((p) =>
@@ -512,11 +526,12 @@ function TemplateEditor({
                             manageStatus(msg, 3000);
                         }
 
+                        // ПРИМЕНЕНИЕ UNDO ДЛЯ ИМПОРТА
                         if (mode === "replace") {
-                            setProperties(knownProperties);
+                            setUndoableProperties(knownProperties);
                             setLength(result.data.length);
                             setWidth(result.data.width);
-                            manageStatus("Данные заменены", 1500);
+                            manageStatus("Данные заменены (Ctrl+Z)", 2000);
                         } else {
                             const existingPropIds = new Set(
                                 properties.map((p) => p.id),
@@ -526,13 +541,13 @@ function TemplateEditor({
                             );
 
                             if (newProperties.length > 0) {
-                                setProperties((prev) => [
-                                    ...prev,
+                                setUndoableProperties([
+                                    ...properties,
                                     ...newProperties,
                                 ]);
                                 manageStatus(
-                                    `Добавлено ${newProperties.length}`,
-                                    1500,
+                                    `Добавлено ${newProperties.length} (Ctrl+Z)`,
+                                    2000,
                                 );
                             } else {
                                 manageStatus("Новых свойств не найдено", 1500);

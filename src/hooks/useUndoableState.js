@@ -5,10 +5,20 @@ function useUndoableState(key, initialValue) {
     const [state, setState] = useState(() => {
         try {
             const savedValue = localStorage.getItem(key);
-            return savedValue ? JSON.parse(savedValue) : initialValue;
-        } catch {
-            return initialValue;
+            if (savedValue) {
+                return JSON.parse(savedValue);
+            }
+        } catch (error) {
+            console.error("Ошибка парсинга localStorage:", error);
         }
+
+        // ВАЖНОЕ ИСПРАВЛЕНИЕ:
+        // Если initialValue — это функция (ленивая инициализация), вызываем её,
+        // чтобы получить само значение (массив), а не записывать функцию в стейт.
+        if (initialValue instanceof Function) {
+            return initialValue();
+        }
+        return initialValue;
     });
 
     const undoState = useRef(null);
@@ -24,34 +34,29 @@ function useUndoableState(key, initialValue) {
         (newState) => {
             // Сохраняем текущее состояние для возможной отмены
             undoState.current = state;
-            // Сразу применяем новое состояние (например, с удаленным элементом)
+            // Сразу применяем новое состояние
             setState(newState);
 
             // Очищаем предыдущий таймер, если он был
             clearTimeout(undoTimer.current);
 
-            // Устанавливаем таймер на 3 секунды
+            // Устанавливаем таймер на 15 секунд
             undoTimer.current = setTimeout(() => {
-                // Через 3 секунды "забываем" состояние для отмены, делая удаление окончательным
                 undoState.current = null;
-            }, 3000);
+            }, 15000);
         },
-        [state]
+        [state],
     );
 
     // Функция отмены
     const undo = useCallback(() => {
-        // Если есть что отменять (т.е. таймер еще не истек)
         if (undoState.current) {
-            // Восстанавливаем предыдущее состояние
             setState(undoState.current);
-            // "Забываем" состояние для отмены
             undoState.current = null;
-            // Очищаем таймер, чтобы удаление не произошло
             clearTimeout(undoTimer.current);
-            return true; // Возвращаем true, чтобы показать, что отмена сработала
+            return true;
         }
-        return false; // Отменять было нечего
+        return false;
     }, []);
 
     return [state, setState, setUndoable, undo];
