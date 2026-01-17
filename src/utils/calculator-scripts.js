@@ -2,10 +2,6 @@
 // Хелперы дублируются внутри каждой функции,
 // чтобы executeScript гарантированно работал без внешних зависимостей.
 
-// --- ХЕЛПЕР ЗАПИСИ ЗНАЧЕНИЯ ---
-// Используем щадящую точность (до 5 знаков), чтобы убрать мусор типа 0.3000000004,
-// но НЕ округлять реальные данные (0.0009 не превратится в 0.001).
-
 // 1. Площадь плитки (Длина * Ширина / 10000)
 export const calculateTileArea = () => {
     try {
@@ -30,12 +26,25 @@ export const calculateTileArea = () => {
             return parseFloat(el.value.replace(",", "."));
         };
 
+        // --- УМНОЕ ОКРУГЛЕНИЕ ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            // УБРАЛИ ОКРУГЛЕНИЕ. Оставляем до 5 знаков, чтобы не терять точность площади (0.0009)
-            // и убрать программный мусор.
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                // Для малых чисел (0.0009, 0.00122) берем 3 значащие цифры
+                // Пример: 0.001225 -> 0.00123
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                // Для больших чисел (22.4964) берем жестко 3 знака после запятой
+                // Пример: 22.4964 -> 22.496
+                result = parseFloat(Number(val).toFixed(3));
+            }
+
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -47,7 +56,6 @@ export const calculateTileArea = () => {
             const length = getValue(lengthEl); // см
             const width = getValue(widthEl); // см
 
-            // Важно: площадь маленькой плитки может быть 0.0009, округлять нельзя
             const area = (length * width) / 10000;
 
             if (area > 0) {
@@ -82,8 +90,18 @@ export const calculateWeightOfTile = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                result = parseFloat(Number(val).toFixed(3));
+            }
+
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -97,7 +115,7 @@ export const calculateWeightOfTile = () => {
 
         const area = getValue(areaEl);
 
-        // А: Через вес м2 (Самый точный)
+        // А: Через вес м2
         if (getValue(weightM2El) > 0 && area > 0) {
             const weight = getValue(weightM2El) * area;
             setValue(weightTileEl, weight);
@@ -139,8 +157,18 @@ export const calculateWeightOfM2 = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                result = parseFloat(Number(val).toFixed(3));
+            }
+
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -195,9 +223,19 @@ export const calculateTilesInBox = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            // УБРАЛИ Math.round. Теперь показывает точное дробное, если получится.
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                // Для штук тоже оставляем 3 знака, вдруг там дробное кол-во (редко, но бывает)
+                result = parseFloat(Number(val).toFixed(3));
+            }
+
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -241,8 +279,18 @@ export const calculateM2InBox = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                result = parseFloat(Number(val).toFixed(3));
+            }
+
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -286,8 +334,18 @@ export const calculateWeightOfBox = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                result = parseFloat(Number(val).toFixed(3));
+            }
+
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -303,9 +361,9 @@ export const calculateWeightOfBox = () => {
 
         if (!weightBoxEl) return;
 
-        // ИЗМЕНЕННЫЙ ПОРЯДОК ПРИОРИТЕТОВ:
+        // ПРИОРИТЕТЫ:
 
-        // 1. Приоритет (Самый частый): М2 в коробке * Вес м2
+        // 1. М2 в коробке * Вес м2 (Самый точный и частый)
         const m2Box = getValue(m2InBoxEl);
         const wM2 = getValue(weightM2El);
         if (m2Box > 0 && wM2 > 0) {
@@ -313,7 +371,7 @@ export const calculateWeightOfBox = () => {
             return;
         }
 
-        // 2. Приоритет: Штуки * Вес одной
+        // 2. Штуки * Вес одной
         const qty = getValue(qtyEl);
         const wTile = getValue(weightTileEl);
         if (qty > 0 && wTile > 0) {
@@ -321,7 +379,7 @@ export const calculateWeightOfBox = () => {
             return;
         }
 
-        // 3. Приоритет (Новый): Вес палеты / Коробок в палете
+        // 3. Вес палеты / Коробок в палете (Запасной)
         const wPallet = getValue(weightPalletEl);
         const boxes = getValue(boxesEl);
         if (wPallet > 0 && boxes > 0) {
@@ -356,8 +414,17 @@ export const calculateBoxesInPallet = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+            // Тут скорее всего будут числа > 1, так что сработает toFixed(3)
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                result = parseFloat(Number(val).toFixed(3));
+            }
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -401,8 +468,16 @@ export const calculateM2InPallet = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                result = parseFloat(Number(val).toFixed(3));
+            }
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
@@ -446,8 +521,17 @@ export const calculateWeightOfPallet = () => {
         };
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            const cleanVal = parseFloat(Number(val).toFixed(5));
-            el.value = cleanVal;
+            let result;
+            const absVal = Math.abs(val);
+            // Вес палеты точно > 1
+            if (absVal === 0) {
+                result = 0;
+            } else if (absVal < 1) {
+                result = parseFloat(Number(val).toPrecision(3));
+            } else {
+                result = parseFloat(Number(val).toFixed(3));
+            }
+            el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
