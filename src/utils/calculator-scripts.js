@@ -3,6 +3,7 @@
 // чтобы executeScript гарантированно работал без внешних зависимостей.
 
 // 1. Площадь плитки (Длина * Ширина / 10000)
+// ОСТАВЛЯЕМ КАК ЕСТЬ (3 знака)
 export const calculateTileArea = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -26,7 +27,7 @@ export const calculateTileArea = () => {
             return parseFloat(el.value.replace(",", "."));
         };
 
-        // --- УМНОЕ ОКРУГЛЕНИЕ ---
+        // --- СТАРОЕ ОКРУГЛЕНИЕ ДЛЯ РАЗМЕРОВ ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
             let result;
@@ -35,12 +36,8 @@ export const calculateTileArea = () => {
             if (absVal === 0) {
                 result = 0;
             } else if (absVal < 1) {
-                // Для малых чисел (0.0009, 0.00122) берем 3 значащие цифры
-                // Пример: 0.001225 -> 0.00123
                 result = parseFloat(Number(val).toPrecision(3));
             } else {
-                // Для больших чисел (22.4964) берем жестко 3 знака после запятой
-                // Пример: 22.4964 -> 22.496
                 result = parseFloat(Number(val).toFixed(3));
             }
 
@@ -68,6 +65,7 @@ export const calculateTileArea = () => {
 };
 
 // 2. Вес 1 шт
+// ИЗМЕНЕНО: Округление до 2 знаков
 export const calculateWeightOfTile = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -88,18 +86,12 @@ export const calculateWeightOfTile = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- НОВОЕ ОКРУГЛЕНИЕ ДЛЯ ВЕСА (2 знака) ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            let result;
-            const absVal = Math.abs(val);
-
-            if (absVal === 0) {
-                result = 0;
-            } else if (absVal < 1) {
-                result = parseFloat(Number(val).toPrecision(3));
-            } else {
-                result = parseFloat(Number(val).toFixed(3));
-            }
+            // Округляем до 2 знаков. parseFloat уберет лишние нули (22.50 -> 22.5)
+            const result = parseFloat(Number(val).toFixed(2));
 
             el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -135,6 +127,7 @@ export const calculateWeightOfTile = () => {
 };
 
 // 3. Вес 1 м2
+// ИЗМЕНЕНО: Округление до 2 знаков
 export const calculateWeightOfM2 = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -155,18 +148,11 @@ export const calculateWeightOfM2 = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- НОВОЕ ОКРУГЛЕНИЕ ДЛЯ ВЕСА (2 знака) ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            let result;
-            const absVal = Math.abs(val);
-
-            if (absVal === 0) {
-                result = 0;
-            } else if (absVal < 1) {
-                result = parseFloat(Number(val).toPrecision(3));
-            } else {
-                result = parseFloat(Number(val).toFixed(3));
-            }
+            const result = parseFloat(Number(val).toFixed(2));
 
             el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -201,6 +187,7 @@ export const calculateWeightOfM2 = () => {
 };
 
 // 4. Штук в коробке
+// ОСТАВЛЯЕМ КАК ЕСТЬ (3 знака/precision)
 export const calculateTilesInBox = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -221,6 +208,8 @@ export const calculateTilesInBox = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- СТАРОЕ ОКРУГЛЕНИЕ ДЛЯ ШТУК ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
             let result;
@@ -231,7 +220,6 @@ export const calculateTilesInBox = () => {
             } else if (absVal < 1) {
                 result = parseFloat(Number(val).toPrecision(3));
             } else {
-                // Для штук тоже оставляем 3 знака, вдруг там дробное кол-во (редко, но бывает)
                 result = parseFloat(Number(val).toFixed(3));
             }
 
@@ -257,6 +245,7 @@ export const calculateTilesInBox = () => {
 };
 
 // 5. М2 в коробке
+// ОСТАВЛЯЕМ КАК ЕСТЬ
 export const calculateM2InBox = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -277,6 +266,8 @@ export const calculateM2InBox = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- СТАРОЕ ОКРУГЛЕНИЕ ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
             let result;
@@ -312,6 +303,7 @@ export const calculateM2InBox = () => {
 };
 
 // 6. Вес коробки
+// ИЗМЕНЕНО: Округление до 2 знаков
 export const calculateWeightOfBox = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -332,18 +324,11 @@ export const calculateWeightOfBox = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- НОВОЕ ОКРУГЛЕНИЕ ДЛЯ ВЕСА (2 знака) ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            let result;
-            const absVal = Math.abs(val);
-
-            if (absVal === 0) {
-                result = 0;
-            } else if (absVal < 1) {
-                result = parseFloat(Number(val).toPrecision(3));
-            } else {
-                result = parseFloat(Number(val).toFixed(3));
-            }
+            const result = parseFloat(Number(val).toFixed(2));
 
             el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -392,6 +377,7 @@ export const calculateWeightOfBox = () => {
 };
 
 // 7. Коробок на палете
+// ОСТАВЛЯЕМ КАК ЕСТЬ
 export const calculateBoxesInPallet = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -412,11 +398,12 @@ export const calculateBoxesInPallet = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- СТАРОЕ ОКРУГЛЕНИЕ ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
             let result;
             const absVal = Math.abs(val);
-            // Тут скорее всего будут числа > 1, так что сработает toFixed(3)
             if (absVal === 0) {
                 result = 0;
             } else if (absVal < 1) {
@@ -446,6 +433,7 @@ export const calculateBoxesInPallet = () => {
 };
 
 // 8. М2 на палете
+// ОСТАВЛЯЕМ КАК ЕСТЬ
 export const calculateM2InPallet = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -466,6 +454,8 @@ export const calculateM2InPallet = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- СТАРОЕ ОКРУГЛЕНИЕ ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
             let result;
@@ -499,6 +489,7 @@ export const calculateM2InPallet = () => {
 };
 
 // 9. Вес палеты
+// ИЗМЕНЕНО: Округление до 2 знаков
 export const calculateWeightOfPallet = () => {
     try {
         const allPropSelects = document.querySelectorAll(
@@ -519,18 +510,12 @@ export const calculateWeightOfPallet = () => {
             if (!el || !el.value) return 0;
             return parseFloat(el.value.replace(",", "."));
         };
+
+        // --- НОВОЕ ОКРУГЛЕНИЕ ДЛЯ ВЕСА (2 знака) ---
         const setValue = (el, val) => {
             if (!el || isNaN(val)) return;
-            let result;
-            const absVal = Math.abs(val);
-            // Вес палеты точно > 1
-            if (absVal === 0) {
-                result = 0;
-            } else if (absVal < 1) {
-                result = parseFloat(Number(val).toPrecision(3));
-            } else {
-                result = parseFloat(Number(val).toFixed(3));
-            }
+            const result = parseFloat(Number(val).toFixed(2));
+
             el.value = result;
             el.dispatchEvent(new Event("change", { bubbles: true }));
         };
