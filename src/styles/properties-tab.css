@@ -1,0 +1,565 @@
+/* --- Стили для Менеджера Шаблонов --- */
+.add-template-form {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+/* Инпут названия шаблона */
+.add-template-form .input-field {
+    width: 100px !important;
+    flex-grow: 1;
+    min-width: 80px;
+    flex-shrink: 1;
+    height: 32px; /* Чуть компактнее */
+}
+
+/* Кнопки "Добавить" и "Отмена" */
+.add-template-form .button {
+    padding: 0 10px;
+    height: 32px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 13px;
+}
+
+.template-list-container {
+    margin-top: 16px;
+}
+
+.template-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.template-list-header h2 {
+    margin: 0;
+}
+
+.empty-list-message {
+    color: #555;
+    font-style: italic;
+}
+
+.template-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Элемент списка (Шаблон или Свойство) */
+.template-list li {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    min-height: 38px;
+    touch-action: none;
+}
+
+.template-info,
+.prop-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.template-name,
+.prop-name {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.template-prop-count,
+.prop-value {
+    font-size: 12px;
+    color: #555;
+}
+
+.prop-value {
+    font-weight: bold;
+}
+
+.template-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* --- Стили для Drag & Drop элементов --- */
+.prop-number {
+    font-size: 14px;
+    color: #888;
+    font-weight: 500;
+}
+
+.drag-handle {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    cursor: grab;
+    color: #a0aec0;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.handle-wrapper {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    cursor: grab;
+    min-width: 0;
+}
+
+/* --- Стили для Редактора Шаблонов --- */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.editor-title-input {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s ease;
+    width: 70%;
+}
+
+.editor-title-input:focus {
+    border-bottom-color: #3b82f6;
+}
+
+.properties-list {
+    margin-top: 12px;
+    margin-bottom: 20px;
+}
+
+.editor-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.add-prop-form {
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.value-empty {
+    font-style: italic;
+    font-weight: normal;
+    color: #888;
+}
+
+.template-list li.editing-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.template-list li.ignored-item .prop-details {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* --- Стили для полей Длина/Ширина --- */
+.dimensions-inputs {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    align-items: center;
+}
+
+.dimension-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dimension-group label {
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+}
+
+.dimension-group .input-field {
+    width: 100px;
+}
+
+/* --- КНОПКИ КАЛЬКУЛЯТОРА И ОЧИСТКИ --- */
+.calc-button,
+.clear-button-small {
+    font-size: 11px !important;
+    padding: 0 !important;
+    text-transform: uppercase;
+    font-weight: 600;
+    width: 48px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calc-button {
+    background-color: #e6f7ff;
+    border-color: #91d5ff;
+    color: #096dd9;
+}
+
+.calc-button:hover {
+    background-color: #bae7ff;
+}
+
+/* --- Стили для активного шаблона --- */
+.active-template-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background-color: #fff;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.active-template-display strong {
+    font-size: 14px;
+    color: #3b82f6;
+    flex-grow: 1;
+}
+
+.active-template-display .no-template {
+    font-style: italic;
+    color: #888;
+    flex-grow: 1;
+}
+
+.template-selector-wrapper {
+    position: relative;
+    margin-left: auto;
+}
+
+/* --- ВЫПАДАЮЩИЙ СПИСОК ШАБЛОНОВ (Стилизация) --- */
+.template-chooser-popup {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 6px;
+    z-index: 100;
+
+    /* Визуальный стиль */
+    background-color: #ffffff;
+    border: 1px solid #dce3f0;
+    border-radius: 8px;
+    box-shadow:
+        0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    padding: 4px;
+    min-width: 220px;
+    max-width: 300px;
+    outline: none;
+
+    /* Шрифт */
+    font-family: inherit;
+    font-size: 13px;
+    color: #333;
+    overflow-y: auto;
+}
+
+/* Опции внутри списка */
+.template-chooser-popup option {
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.template-chooser-popup option:hover {
+    background-color: #f1f5f9;
+    color: #1e293b;
+}
+
+.template-chooser-popup option:checked {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+/* Кастомный скроллбар для списка */
+.template-chooser-popup::-webkit-scrollbar {
+    width: 6px;
+}
+.template-chooser-popup::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* --- Сетки кнопок --- */
+.action-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.action-buttons-grid-2x2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.action-buttons-grid .button,
+.action-buttons-grid-2x2 .button {
+    width: 100%;
+}
+
+/* --- Поиск и инлайн свойства --- */
+.inline-properties-section {
+    margin-bottom: 16px;
+    margin-top: -8px;
+}
+
+.inline-properties-header {
+    position: sticky;
+    top: 45px;
+    background-color: #eef2f9;
+    padding: 8px 16px;
+    z-index: 5;
+    border-bottom: 1px solid #dce3f0;
+    margin: 0 -16px 12px -16px;
+}
+
+.inline-properties-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.search-bar-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.search-input {
+    flex-grow: 1;
+    width: auto;
+}
+
+.extra-actions-container {
+    margin-top: 8px;
+}
+
+.calculator-section {
+    margin-bottom: 16px;
+}
+
+.calculator-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #555;
+    border-bottom: 1px solid #dce3f0;
+    padding-bottom: 4px;
+}
+
+.import-actions-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.import-actions-row .button {
+    flex: 1;
+}
+
+.import-actions-row .button.icon-button {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+}
+
+/* ========================================================== */
+/* МОДАЛЬНОЕ ОКНО (Фильтр)                                  */
+/* ========================================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    width: 300px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.modal-content h3 {
+    font-size: 18px;
+    color: #333;
+    margin: 0 0 8px 0;
+}
+
+.modal-desc {
+    font-size: 13px;
+    color: #666;
+    margin: 0 0 16px 0;
+}
+
+.filter-controls {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.filter-list-container {
+    height: 100px;
+    overflow-y: auto;
+    border: 1px solid #dce3f0;
+    border-top: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: #fafafa;
+}
+
+.filter-item {
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    color: #333;
+}
+
+.filter-item:hover {
+    background-color: #eef2f9;
+}
+
+.filter-item.selected {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.add-btn {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.tags-container {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
+    min-height: 50px;
+    background-color: #fafafa;
+    margin-bottom: 16px;
+}
+
+.tag {
+    background-color: #e6f7ff;
+    border: 1px solid #91d5ff;
+    color: #096dd9;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tag button {
+    background: none;
+    border: none;
+    color: #096dd9;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    line-height: 1;
+    font-weight: bold;
+}
+
+.no-tags {
+    font-size: 12px;
+    color: #999;
+    width: 100%;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.modal-actions-right {
+    display: flex;
+    gap: 8px;
+}

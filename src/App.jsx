@@ -1,29 +1,28 @@
 import React, { useState, useRef } from "react";
-import useLocalStorage from "./hooks/useLocalStorage.js"; // 1. Импортируем хук
+import useLocalStorage from "./hooks/useLocalStorage.js";
 import Header from "./components/Header";
 import ImagesTab from "./components/ImagesTab";
-import PropertiesTab from "./components/PropertiesTab";
+import PropertiesTab from "./components/PropertiesTab/PropertiesTab"; // Исправленный путь
 import StatusBar from "./components/StatusBar";
 import "./App.css";
 
 function App() {
-    // 2. Заменяем useState на useLocalStorage
     const [activeTab, setActiveTab] = useLocalStorage("active-tab", "images");
 
     const defaultStatus = "Жду указаний";
     const [statusMessage, setStatusMessage] = useState(defaultStatus);
     const [isError, setIsError] = useState(false);
-    const [isLoading, setIsLoading] = useState(false); // Состояние для шестеренки
+    const [isLoading, setIsLoading] = useState(false);
     const statusTimer = useRef(null);
 
     const manageStatus = (inProgressMessage, durationMs) => {
         clearTimeout(statusTimer.current);
         setIsError(false);
-        setIsLoading(true); // <-- Показываем шестеренку
+        setIsLoading(true);
         setStatusMessage(inProgressMessage);
 
         statusTimer.current = setTimeout(() => {
-            setIsLoading(false); // <-- Прячем шестеренку
+            setIsLoading(false);
             setStatusMessage("Готово");
             statusTimer.current = setTimeout(() => {
                 setStatusMessage(defaultStatus);
@@ -34,7 +33,7 @@ function App() {
     const manageError = (errorMessage) => {
         clearTimeout(statusTimer.current);
         setIsError(true);
-        setIsLoading(false); // <-- Прячем шестеренку в случае ошибки
+        setIsLoading(false);
         setStatusMessage(errorMessage);
 
         statusTimer.current = setTimeout(() => {
@@ -62,7 +61,6 @@ function App() {
                 )}
             </main>
 
-            {/* 3. Передаем isLoading в StatusBar */}
             <StatusBar
                 message={statusMessage}
                 isError={isError}

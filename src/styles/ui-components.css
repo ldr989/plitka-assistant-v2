@@ -1,0 +1,169 @@
+/* --- Стили для форм --- */
+.form-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-field {
+    padding: 8px;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+
+/* --- ГЛОБАЛЬНЫЕ КНОПКИ --- */
+.button {
+    padding: 8px 12px;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px; /* Фиксированная высота для выравнивания */
+    box-sizing: border-box;
+}
+
+.button:hover {
+    background-color: #f0f2f5;
+}
+
+.button:disabled {
+    background-color: #f0f2f5;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+/* Варианты кнопок */
+.button.primary {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.button.primary:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+.button.secondary {
+    background-color: #e4e6eb;
+    color: #333;
+}
+
+.button.small {
+    padding: 4px 8px;
+    font-size: 12px;
+    height: 28px;
+}
+
+/* Кнопки-иконки */
+.button.icon-button {
+    padding: 6px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.button.icon-button svg {
+    width: 16px;
+    height: 16px;
+    stroke: #333;
+}
+
+.button.icon-button:hover {
+    background-color: #e4e6eb;
+}
+
+/* Кнопка удаления (корзина) */
+.button.icon-button.danger {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.button.icon-button.danger:hover {
+    background-color: #f8d7da;
+}
+
+.button.icon-button.danger svg {
+    stroke: #e53e3e;
+}
+
+/* --- Элементы ввода (Select, Radio, Checkbox) --- */
+.select-field {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #dce3f0;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.radio-group,
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.radio-group label,
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* --- Анимация для шестеренки --- */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-gear {
+    animation: spin 1.5s linear infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Элементы степпера (счетчика) --- */
+.stepper-button {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 30px;
+    border-radius: 4px;
+    margin-right: 4px;
+    border: 1px solid #dce3f0;
+    background-color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.stepper-button:last-child {
+    margin-right: 0;
+}
+
+.stepper-button:hover {
+    background-color: #f0f2f5;
+    border-color: #b0c4de;
+}
+
+.clear-button {
+    color: #e53e3e;
+    font-weight: bold;
+}

@@ -14,7 +14,7 @@ function ImagesTab({ manageStatus, manageError }) {
 
     const createNewImageForms = (count) => {
         const formContainer = document.querySelector(
-            "#plumbing-image-content_type-object_id-group"
+            "#plumbing-image-content_type-object_id-group",
         );
         if (!formContainer) {
             return {
@@ -39,18 +39,14 @@ function ImagesTab({ manageStatus, manageError }) {
             cancelable: true,
         });
         let clicksRemaining = count;
-        // --- УСКОРЕНИЕ: Интервал снижен с 150 до 40 ---
         const clickInterval = 40;
 
         function clickWithDelay() {
             if (clicksRemaining <= 0) return;
             addButton.dispatchEvent(clickEvent);
-
-            // --- УСКОРЕНИЕ: Скролл чуть быстрее, но реже (опционально, оставим небольшую задержку) ---
             setTimeout(() => {
                 window.scrollTo(0, document.body.scrollHeight * 0.98);
             }, 20);
-
             clicksRemaining--;
             setTimeout(clickWithDelay, clickInterval);
         }
@@ -64,8 +60,6 @@ function ImagesTab({ manageStatus, manageError }) {
             alert("Пожалуйста, введите число от 1 до 100.");
             return;
         }
-
-        // --- УСКОРЕНИЕ: Обновлен расчет времени для статус-бара ---
         const clickInterval = 40;
         const estimatedTime = 300 + num * clickInterval;
         manageStatus(`Создаю ${num} форм...`, estimatedTime);
@@ -89,7 +83,7 @@ function ImagesTab({ manageStatus, manageError }) {
                         !injectionResults[0]
                     ) {
                         manageError(
-                            "Ошибка: не удалось выполнить скрипт на странице"
+                            "Ошибка: не удалось выполнить скрипт на странице",
                         );
                         return;
                     }
@@ -97,7 +91,7 @@ function ImagesTab({ manageStatus, manageError }) {
                     if (result && !result.success) {
                         manageError(result.message);
                     }
-                }
+                },
             );
         });
     };
@@ -106,8 +100,6 @@ function ImagesTab({ manageStatus, manageError }) {
         const allSelectsOnPage = document.querySelectorAll("select");
         let found = false;
         allSelectsOnPage.forEach((select) => {
-            // --- ИСПРАВЛЕНИЕ: Добавлена проверка, что имя заканчивается на -itype ---
-            // Это исключает поле interior_type, которое тоже начинается с plumbing-image
             if (
                 select.name.startsWith("plumbing-image") &&
                 select.name.endsWith("-itype")
@@ -116,7 +108,7 @@ function ImagesTab({ manageStatus, manageError }) {
                 if (select.value !== targetValue) {
                     select.value = targetValue;
                     select.dispatchEvent(
-                        new Event("change", { bubbles: true })
+                        new Event("change", { bubbles: true }),
                     );
                 }
             }
@@ -159,7 +151,7 @@ function ImagesTab({ manageStatus, manageError }) {
                     if (result && !result.success) {
                         manageError(result.message);
                     }
-                }
+                },
             );
         });
     };
@@ -210,7 +202,10 @@ function ImagesTab({ manageStatus, manageError }) {
                         </button>
                     </div>
                 </div>
-                <button className="button" onClick={handleCreateFormsClick}>
+                <button
+                    className="button primary"
+                    onClick={handleCreateFormsClick}
+                >
                     Создать
                 </button>
             </div>
@@ -222,18 +217,19 @@ function ImagesTab({ manageStatus, manageError }) {
                 }}
             />
             <h2>Изменить тип всех изображений</h2>
-            <div className="form-group">
+            {/* Сетка кнопок 50/50 */}
+            <div className="image-types-grid">
                 <button
                     className="button"
                     onClick={() => handleChangeTypeClick("10")}
                 >
-                    Поменять на Изображения
+                    Изображения
                 </button>
                 <button
                     className="button"
                     onClick={() => handleChangeTypeClick("60")}
                 >
-                    Поменять на Лица
+                    Лица
                 </button>
             </div>
         </div>
