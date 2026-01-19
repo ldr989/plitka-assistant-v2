@@ -79,6 +79,67 @@ export const getPropertiesFromPage = () => {
     }
 };
 
+// --- НОВАЯ ФУНКЦИЯ: Сбор контекста (Под твои ID) ---
+export const getProductContext = () => {
+    try {
+        const getValue = (selector) => {
+            const el = document.querySelector(selector);
+            return el ? el.value : "";
+        };
+
+        // 1. ЗАВОД и КОЛЛЕКЦИЯ
+        // Формат строки: "Monocibec Ceramiche / Graphis"
+        const collectionRaw = getValue("#id_collection-autocomplete");
+        let factory = "";
+        let collection = "";
+
+        if (collectionRaw) {
+            if (collectionRaw.includes("/")) {
+                const parts = collectionRaw.split("/");
+                factory = parts[0].trim();
+                collection = parts[1].trim();
+            } else {
+                collection = collectionRaw.trim();
+            }
+        }
+
+        // 2. МОДЕЛЬ (Артикул)
+        const vendorCode = getValue("#id_model").trim();
+
+        // 3. НАЗВАНИЕ ПЛИТКИ
+        const tileName = getValue("#id_name").trim();
+
+        // 4. РАЗМЕРЫ
+        // Сначала меняем запятую на точку, чтобы parseFloat сработал корректно
+        const lengthRaw = getValue("#id_length").replace(",", ".");
+        const widthRaw = getValue("#id_width").replace(",", ".");
+
+        let size = "";
+        if (lengthRaw && widthRaw) {
+            // parseFloat автоматически убирает лишние нули в конце десятичной части
+            // "60.00" -> 60
+            // "60.50" -> 60.5
+            // "58.25" -> 58.25
+            const l = parseFloat(lengthRaw);
+            const w = parseFloat(widthRaw);
+            size = `${l}x${w}`;
+        }
+
+        return {
+            factory: factory,
+            collection: collection,
+            vendorCode: vendorCode,
+            tileName: tileName,
+            size: size,
+        };
+    } catch (e) {
+        console.error("Context scraping error:", e);
+        return null;
+    }
+};
+
+// --- ФУНКЦИИ ВНЕДРЕНИЯ ФОРМ (ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ) ---
+
 export const addPropertyFormsOnPage = (missingPropIds) => {
     let addButton = null;
     const strongElements = document.querySelectorAll("strong");
@@ -118,7 +179,6 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
         ).length;
         addButton.dispatchEvent(clickEvent);
 
-        // --- УСКОРЕНИЕ: Уменьшено ожидание появления строки с 75 до 30 мс ---
         setTimeout(() => {
             const newSelectId = `id_plumbing-attributevalue-content_type-object_id-${currentFormCount}-attribute`;
             const newSelect = document.getElementById(newSelectId);
@@ -130,7 +190,6 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
 
             window.scrollTo(0, document.body.scrollHeight * 0.98);
 
-            // --- УСКОРЕНИЕ: Уменьшена пауза перед следующей формой с 100 до 20 мс ---
             setTimeout(addNextForm, 20);
         }, 30);
     }
@@ -140,7 +199,6 @@ export const addPropertyFormsOnPage = (missingPropIds) => {
 };
 
 export const fillPropertyFormsOnPage = async (propsToFill) => {
-    // --- УСКОРЕНИЕ: Уменьшена задержка заполнения с 100 до 20 мс ---
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     const setElementValue = (element, value) => {
@@ -172,7 +230,8 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
             });
             return;
         }
-        if (element.value !== value) {
+
+        if (element.value !== String(value)) {
             element.value = value;
             element.dispatchEvent(new Event("change", { bubbles: true }));
         }
@@ -184,9 +243,6 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
     );
 
     for (const propFromTemplate of propsToFill) {
-        // --- ВАЖНОЕ ИЗМЕНЕНИЕ: Пропускаем пустые значения ---
-        // Если value пустое, null или undefined — переходим к следующему свойству,
-        // не меняя ничего на странице.
         if (
             propFromTemplate.value === null ||
             propFromTemplate.value === undefined ||
@@ -205,7 +261,6 @@ export const fillPropertyFormsOnPage = async (propsToFill) => {
                 if (valueElement) {
                     setElementValue(valueElement, propFromTemplate.value);
                     filledCount++;
-                    // --- УСКОРЕНИЕ: используем уменьшенную задержку 20мс ---
                     await delay(20);
                 }
                 break;
@@ -273,7 +328,6 @@ export const deleteEmptyProperties = () => {
         if (deleteButtonsToClick.length === 0) return;
         const button = deleteButtonsToClick.pop();
         button.click();
-        // --- УСКОРЕНИЕ: Уменьшена задержка удаления с 100 до 30 мс ---
         setTimeout(clickNext, 30);
     }
 
