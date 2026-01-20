@@ -126,7 +126,7 @@ function PropertiesTab({ manageStatus, manageError }) {
             <TemplateList
                 templates={templates}
                 onDragEnd={(e) => {
-                    if (e.over && e.active.id !== e.over.id)
+                    if (e.over && e.active.id !== e.over.id) {
                         setTemplates((items) =>
                             arrayMove(
                                 items,
@@ -134,6 +134,8 @@ function PropertiesTab({ manageStatus, manageError }) {
                                 items.findIndex((x) => x.id === e.over.id),
                             ),
                         );
+                        manageStatus("Порядок шаблонов изменен", 1000);
+                    }
                 }}
                 onAdd={handleAddTemplate}
                 onEdit={setEditingTemplateId}
@@ -179,8 +181,18 @@ function PropertiesTab({ manageStatus, manageError }) {
                                 className="template-chooser-popup"
                                 value={activeTemplateId || ""}
                                 onChange={(e) => {
-                                    setActiveTemplateId(e.target.value);
+                                    const newVal = e.target.value;
+                                    setActiveTemplateId(newVal);
                                     setShowTemplateSelector(false);
+                                    if (newVal) {
+                                        const tName = templates.find(
+                                            (t) => String(t.id) === newVal,
+                                        )?.name;
+                                        manageStatus(
+                                            `Выбран шаблон: ${tName}`,
+                                            1000,
+                                        );
+                                    }
                                 }}
                                 size={Math.min(templates.length + 1, 8)}
                                 autoFocus
@@ -267,7 +279,10 @@ function PropertiesTab({ manageStatus, manageError }) {
                                     sensors={sensors}
                                     collisionDetection={closestCenter}
                                     onDragEnd={(e) => {
-                                        if (e.over && e.active.id !== e.over.id)
+                                        if (
+                                            e.over &&
+                                            e.active.id !== e.over.id
+                                        ) {
                                             setLocalProperties(
                                                 arrayMove(
                                                     localProperties,
@@ -282,6 +297,11 @@ function PropertiesTab({ manageStatus, manageError }) {
                                                     ),
                                                 ),
                                             );
+                                            manageStatus(
+                                                "Порядок изменен",
+                                                1000,
+                                            );
+                                        }
                                     }}
                                 >
                                     <SortableContext
@@ -338,8 +358,12 @@ function PropertiesTab({ manageStatus, manageError }) {
                                                             setInlineEditingPropId(
                                                                 null,
                                                             );
+                                                            manageStatus(
+                                                                "Изменение сохранено",
+                                                                1000,
+                                                            );
                                                         }}
-                                                        onToggleIgnore={() =>
+                                                        onToggleIgnore={() => {
                                                             setLocalProperties(
                                                                 localProperties.map(
                                                                     (x) =>
@@ -352,8 +376,14 @@ function PropertiesTab({ manageStatus, manageError }) {
                                                                               }
                                                                             : x,
                                                                 ),
-                                                            )
-                                                        }
+                                                            );
+                                                            manageStatus(
+                                                                p.ignored
+                                                                    ? "Свойство включено"
+                                                                    : "Свойство игнорируется",
+                                                                1000,
+                                                            );
+                                                        }}
                                                         onValueChange={
                                                             setInlineEditingPropValue
                                                         }

@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     DndContext,
     closestCenter,
@@ -30,10 +30,12 @@ import {
 
 function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
     const [name, setName] = useState(template.name);
-    const [properties, setProperties, setUndoableProperties] = useUndoableState(
-        `editor-props-${template.id}`,
-        () => JSON.parse(JSON.stringify(template.properties || [])),
-    );
+
+    // Достаем undoProperties (4-й аргумент)
+    const [properties, setProperties, setUndoableProperties, undoProperties] =
+        useUndoableState(`editor-props-${template.id}`, () =>
+            JSON.parse(JSON.stringify(template.properties || [])),
+        );
 
     const [length, setLength] = useState(template.length || "");
     const [width, setWidth] = useState(template.width || "");
@@ -56,6 +58,20 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     );
+
+    // Обработчик Ctrl+Z для редактора
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.ctrlKey && e.code === "KeyZ") {
+                e.preventDefault();
+                if (undoProperties()) {
+                    manageStatus("Отмена действия", 1000);
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [undoProperties, manageStatus]);
 
     const handleImport = (mode) => {
         manageStatus("Импорт...", 2000);
@@ -130,6 +146,7 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
             length: String(length).replace(",", "."),
             width: String(width).replace(",", "."),
         });
+        manageStatus(`Шаблон "${name}" сохранен`, 2000);
         onBack();
     };
 
@@ -164,7 +181,10 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                 <h3>Свойства в шаблоне:</h3>
                 <button
                     className="button small secondary"
-                    onClick={() => setUndoableProperties([])}
+                    onClick={() => {
+                        setUndoableProperties([]);
+                        manageStatus("Список очищен (Ctrl+Z)", 1500);
+                    }}
                     disabled={properties.length === 0}
                 >
                     Очистить список
@@ -207,6 +227,8 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                         ),
                                     ),
                                 );
+                                // Здесь можно не спамить статусом, либо добавить легкий статус
+                                // manageStatus("Порядок изменен", 500);
                             }
                         }}
                     >
@@ -240,18 +262,24 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                                 <button
                                                     className="button small primary"
                                                     onClick={() => {
-                                                        setProperties((prev) =>
-                                                            prev.map((p) =>
-                                                                p.id ===
-                                                                editingPropId
-                                                                    ? {
-                                                                          ...p,
-                                                                          value: editingPropValue,
-                                                                      }
-                                                                    : p,
-                                                            ),
+                                                        // Здесь используем setUndoableProperties, чтобы можно было откатить изменение значения
+                                                        setUndoableProperties(
+                                                            (prev) =>
+                                                                prev.map((p) =>
+                                                                    p.id ===
+                                                                    editingPropId
+                                                                        ? {
+                                                                              ...p,
+                                                                              value: editingPropValue,
+                                                                          }
+                                                                        : p,
+                                                                ),
                                                         );
                                                         setEditingPropId(null);
+                                                        manageStatus(
+                                                            "Значение обновлено (Ctrl+Z)",
+                                                            1000,
+                                                        );
                                                     }}
                                                 >
                                                     Сохранить
@@ -277,8 +305,8 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                                 setEditingPropId(p.id);
                                                 setEditingPropValue(p.value);
                                             }}
-                                            onClearValue={(id) =>
-                                                setProperties((prev) =>
+                                            onClearValue={(id) => {
+                                                setUndoableProperties((prev) =>
                                                     prev.map((p) =>
                                                         p.id === id
                                                             ? {
@@ -287,15 +315,23 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                                               }
                                                             : p,
                                                     ),
-                                                )
-                                            }
-                                            onDelete={(id) =>
+                                                );
+                                                manageStatus(
+                                                    "Значение очищено (Ctrl+Z)",
+                                                    1000,
+                                                );
+                                            }}
+                                            onDelete={(id) => {
                                                 setUndoableProperties(
                                                     properties.filter(
                                                         (p) => p.id !== id,
                                                     ),
-                                                )
-                                            }
+                                                );
+                                                manageStatus(
+                                                    "Свойство удалено (Ctrl+Z)",
+                                                    1000,
+                                                );
+                                            }}
                                             onCalculate={(id) => {
                                                 const val =
                                                     calculatePropertyValue(
@@ -304,17 +340,28 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                                         length,
                                                         width,
                                                     );
-                                                if (val)
-                                                    setProperties((prev) =>
-                                                        prev.map((p) =>
-                                                            p.id === id
-                                                                ? {
-                                                                      ...p,
-                                                                      value: val,
-                                                                  }
-                                                                : p,
-                                                        ),
+                                                if (val) {
+                                                    setUndoableProperties(
+                                                        (prev) =>
+                                                            prev.map((p) =>
+                                                                p.id === id
+                                                                    ? {
+                                                                          ...p,
+                                                                          value: val,
+                                                                      }
+                                                                    : p,
+                                                            ),
                                                     );
+                                                    manageStatus(
+                                                        "Рассчитано (Ctrl+Z)",
+                                                        1000,
+                                                    );
+                                                } else {
+                                                    manageStatus(
+                                                        "Не хватает данных для расчета",
+                                                        1500,
+                                                    );
+                                                }
                                             }}
                                             onRecalculateShape={() => {
                                                 const l =
@@ -322,7 +369,7 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                                     w = safeParseFloat(width);
                                                 const shape =
                                                     l === w ? "6361" : "6360";
-                                                setProperties((prev) =>
+                                                setUndoableProperties((prev) =>
                                                     prev.map((p) =>
                                                         p.id === 4287
                                                             ? {
@@ -331,6 +378,10 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                                               }
                                                             : p,
                                                     ),
+                                                );
+                                                manageStatus(
+                                                    "Форма обновлена (Ctrl+Z)",
+                                                    1000,
                                                 );
                                             }}
                                         />
@@ -391,7 +442,7 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                             className="button"
                             onClick={() => {
                                 if (!selectedPropId) return;
-                                setProperties((prev) => [
+                                setUndoableProperties((prev) => [
                                     ...prev,
                                     {
                                         id: Number(selectedPropId),
@@ -401,6 +452,10 @@ function TemplateEditor({ template, onBack, onUpdate, manageStatus }) {
                                 ]);
                                 setIsAddingProp(false);
                                 setSelectedPropId("");
+                                manageStatus(
+                                    "Свойство добавлено (Ctrl+Z)",
+                                    1000,
+                                );
                             }}
                         >
                             Добавить
