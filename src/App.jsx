@@ -3,7 +3,6 @@ import useLocalStorage from "./hooks/useLocalStorage.js";
 import Header from "./components/Header";
 import ImagesTab from "./components/ImagesTab";
 import PropertiesTab from "./components/PropertiesTab/PropertiesTab";
-import SettingsTab from "./components/SettingsTab"; // Импорт настроек
 import StatusBar from "./components/StatusBar";
 import "./App.css";
 
@@ -56,12 +55,6 @@ function App() {
                 )}
                 {activeTab === "properties" && (
                     <PropertiesTab
-                        manageStatus={manageStatus}
-                        manageError={manageError}
-                    />
-                )}
-                {activeTab === "settings" && (
-                    <SettingsTab
                         manageStatus={manageStatus}
                         manageError={manageError}
                     />

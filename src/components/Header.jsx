@@ -17,13 +17,6 @@ function Header({ activeTab, setActiveTab }) {
                 >
                     Свойства
                 </button>
-
-                <button
-                    className={activeTab === "settings" ? "active" : ""}
-                    onClick={() => setActiveTab("settings")}
-                >
-                    Настройки
-                </button>
             </nav>
         </header>
     );
